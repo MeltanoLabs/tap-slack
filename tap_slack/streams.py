@@ -55,7 +55,7 @@ class MessagesStream(SlackStream):
         params = super().get_url_params(context, next_page_token)
         start_time = self.get_starting_timestamp(context)
         if start_time:
-            params["oldest"] = start_time.strftime('%s')
+            params["oldest"] = start_time.strftime("%s")
         return params
 
 
@@ -76,7 +76,7 @@ class ThreadsStream(SlackStream):
         params = super().get_url_params(context, next_page_token)
         start_time = self.get_starting_timestamp(context)
         if start_time:
-            params["oldest"] = start_time.strftime('%s')
+            params["oldest"] = start_time.strftime("%s")
         return params
 
 
@@ -87,4 +87,3 @@ class UsersStream(SlackStream):
     replication_key = None
     records_jsonpath = "members.[*]"
     schema = schemas.users.schema
-

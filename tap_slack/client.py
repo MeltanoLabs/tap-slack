@@ -1,13 +1,8 @@
 """REST client handling, including SlackStream base class."""
 
-import requests
 import time
-from pathlib import Path
-from typing import Any, Dict, Optional, Union, List, Iterable
+from typing import Any, Dict, Optional
 
-from memoization import cached
-
-from singer_sdk.helpers.jsonpath import extract_jsonpath
 from singer_sdk.streams import RESTStream
 from singer_sdk.authenticators import BearerTokenAuthenticator
 
@@ -20,7 +15,6 @@ class SlackStream(RESTStream):
     max_requests_per_minute = 200
     records_jsonpath = "$[*]"
     next_page_token_jsonpath = "$.response_metadata.next_cursor"
-
 
     @property
     def authenticator(self) -> BearerTokenAuthenticator:
@@ -48,34 +42,6 @@ class SlackStream(RESTStream):
         if self._page_size:
             params["limit"] = self._page_size
         return params
-
-    # def get_next_page_token(
-    #     self, response: requests.Response, previous_token: Optional[Any]
-    # ) -> Optional[Any]:
-    #     """Return a token for identifying next page or None if no more pages."""
-    #     # TODO: If pagination is required, return a token which can be used to get the
-    #     #       next page. If this is the final page, return "None" to end the
-    #     #       pagination loop.
-    #     if self.next_page_token_jsonpath:
-    #         all_matches = extract_jsonpath(
-    #             self.next_page_token_jsonpath, response.json()
-    #         )
-    #         first_match = next(iter(all_matches), None)
-    #         next_page_token = first_match
-    #     else:
-    #         next_page_token = response.headers.get("X-Next-Page", None)
-
-    #     return next_page_token
-
-    # def prepare_request_payload(
-    #     self, context: Optional[dict], next_page_token: Optional[Any]
-    # ) -> Optional[dict]:
-    #     """Prepare the data payload for the REST API request.
-
-    #     By default, no payload will be sent (return None).
-    #     """
-    #     # TODO: Delete this method if no payload is required. (Most REST APIs.)
-    #     return None
 
     def post_process(self, row: dict, context: Optional[dict]) -> dict:
         """Apply rate throttling for taps that are likely to run into issues."""
