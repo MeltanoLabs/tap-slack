@@ -9,7 +9,6 @@ from tap_slack.streams import (
     ChannelsStream,
     ChannelMembersStream,
     MessagesStream,
-    FilesStream,
     ThreadsStream,
     UsersStream,
 )
@@ -17,7 +16,6 @@ from tap_slack.streams import (
 STREAM_TYPES = [
     ChannelsStream,
     # ChannelMembersStream,
-    # FilesStream,
     MessagesStream,
     ThreadsStream,
     # UsersStream,
@@ -40,6 +38,12 @@ class TapSlack(Tap):
             "start_date",
             th.DateTimeType,
             description="The earliest record date to sync",
+        ),
+        th.Property(
+            "lookback_window",
+            th.IntegerType,
+            default=7,
+            description="The number of days to look in the past for new thread replies to existing messages",
         ),
     ).to_dict()
 

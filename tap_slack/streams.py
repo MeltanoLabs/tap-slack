@@ -13,7 +13,6 @@ class ChannelsStream(SlackStream):
     name = "channels"
     path = "/conversations.list"
     primary_keys = ["id"]
-    replication_key = None
     records_jsonpath = "channels.[*]"
     schema = schemas.channels.schema
 
@@ -26,7 +25,6 @@ class ChannelMembersStream(SlackStream):
     name = "channel_members"
     path = "/conversations.members"
     primary_keys = ["channel_id", "id"]
-    replication_key = None
     records_jsonpath = "channels.[*]"
     schema = schemas.channel_members.schema
     parent_stream_type = ChannelsStream
@@ -40,15 +38,6 @@ class ChannelMembersStream(SlackStream):
         return params
 
 
-class FilesStream(SlackStream):
-    name = "files"
-    path = "/files.list"
-    primary_keys = ["id"]
-    replication_key = "ts_from"
-    records_jsonpath = "files.[*]"
-    schema = schemas.files.schema
-
-
 class MessagesStream(SlackStream):
     name = "messages"
     path = "/conversations.history"
@@ -57,14 +46,16 @@ class MessagesStream(SlackStream):
     records_jsonpath = "messages.[*]"
     parent_stream_type = ChannelsStream
     ignore_parent_replication_key = True
-    max_requests_per_minute = 60
+    max_requests_per_minute = 50
     schema = schemas.messages.schema
 
     def get_url_params(
         self, context: Optional[dict], next_page_token: Optional[Any]
     ) -> Dict[str, Any]:
         params = super().get_url_params(context, next_page_token)
-        params["oldest"] = self.get_starting_replication_key_value(context)
+        start_time = self.get_starting_timestamp(context)
+        if start_time:
+            params["oldest"] = start_time.strftime('%s')
         return params
 
 
@@ -76,15 +67,16 @@ class ThreadsStream(SlackStream):
     records_jsonpath = "messages.[*]"
     parent_stream_type = ChannelsStream
     ignore_parent_replication_key = True
-    max_requests_per_minute = 60
+    max_requests_per_minute = 50
     schema = schemas.threads.schema
 
     def get_url_params(
         self, context: Optional[dict], next_page_token: Optional[Any]
     ) -> Dict[str, Any]:
         params = super().get_url_params(context, next_page_token)
-        params["oldest"] = self.get_starting_replication_key_value(context)
-        # .strftime('%s')
+        start_time = self.get_starting_timestamp(context)
+        if start_time:
+            params["oldest"] = start_time.strftime('%s')
         return params
 
 
