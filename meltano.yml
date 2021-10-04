@@ -1,0 +1,23 @@
+version: 1
+send_anonymous_usage_stats: true
+project_id: 0dfec8d8-8894-4d59-b771-0f1150939e8b
+plugins:
+  extractors:
+  - name: tap-slack
+    namespace: tap_slack
+    executable: /Users/notouch-hotspare/Documents/github/tap-slack/tap-slack.sh
+    capabilities:
+    - state
+    - catalog
+    - discover
+    settings:
+    - name: api_token
+      kind: password
+    - name: start_date
+      kind: date_iso8601
+    config:
+      start_date: '2021-09-25T00:00:00Z'
+  loaders:
+  - name: target-jsonl
+    variant: andyh1203
+    pip_url: target-jsonl
