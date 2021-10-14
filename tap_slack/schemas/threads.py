@@ -1,7 +1,8 @@
 from singer_sdk import typing as th
 
 schema = th.PropertiesList(
-    th.Property("channel_id", th.StringType),
+    th.Property("channel_id", th.StringType, required=True),
+    th.Property("thread_ts", th.StringType, required=True),
     th.Property("client_msg_id", th.StringType),
     th.Property("type", th.StringType),
     th.Property("text", th.StringType),
@@ -16,7 +17,6 @@ schema = th.PropertiesList(
             )
         ),
     ),
-    th.Property("thread_ts", th.StringType),
     th.Property("reply_count", th.IntegerType),
     th.Property("reply_users_count", th.NumberType),
     th.Property("latest_reply", th.StringType),
