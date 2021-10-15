@@ -40,9 +40,15 @@ class TapSlack(Tap):
             description="The earliest record date to sync",
         ),
         th.Property(
-            "lookback_window",
+            "auto_join_channels",
+            th.BooleanType,
+            default=True,
+            description="Whether the bot user should attempt to join channels that it has not yet joined. The bot user must be a member of the channel to retrieve messages.",
+        ),
+        th.Property(
+            "thread_lookback_days",
             th.IntegerType,
-            default=7,
+            default=3,
             description="The number of days to look in the past for new thread replies to existing messages",
         ),
     ).to_dict()

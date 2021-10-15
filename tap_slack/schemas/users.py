@@ -18,6 +18,8 @@ schema = th.PropertiesList(
     th.Property("is_bot", th.BooleanType),
     th.Property("updated", th.StringType),
     th.Property("is_app_user", th.BooleanType),
+    th.Property("is_email_confirmed", th.BooleanType),
+    th.Property("who_can_share_contact_card", th.StringType),
     th.Property("has_2fa", th.BooleanType),
     th.Property(
         "profile",

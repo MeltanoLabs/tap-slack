@@ -41,6 +41,9 @@ class SlackStream(RESTStream):
             params["cursor"] = next_page_token
         if self._page_size:
             params["limit"] = self._page_size
+        if context:
+            if context.get("channel_id"):
+                params["channel"] = context["channel_id"]
         return params
 
     def post_process(self, row: dict, context: Optional[dict]) -> dict:

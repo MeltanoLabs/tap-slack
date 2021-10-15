@@ -10,7 +10,7 @@ from tap_slack.tap import TapSlack
 SAMPLE_CONFIG = {
     "api_key": os.env.get("API_KEY"),
     "start_date": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d"),
-    "lookback_window": 14,
+    "thread_lookback_days": 14,
 }
 
 

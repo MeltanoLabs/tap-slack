@@ -1,6 +1,10 @@
 """Stream type classes for tap-slack."""
 
-from typing import Any, Dict, Optional
+import requests
+
+from datetime import datetime, timezone, timedelta
+from typing import Any, Dict, Optional, Iterable
+from singer_sdk.helpers.jsonpath import extract_jsonpath
 
 from tap_slack.client import SlackStream
 from tap_slack import schemas
@@ -20,19 +24,18 @@ class ChannelsStream(SlackStream):
 
 class ChannelMembersStream(SlackStream):
     name = "channel_members"
+    parent_stream_type = ChannelsStream
     path = "/conversations.members"
     primary_keys = ["channel_id", "id"]
-    records_jsonpath = "channels.[*]"
+    records_jsonpath = "members.[*]"
     schema = schemas.channel_members
-    parent_stream_type = ChannelsStream
+
     ignore_parent_replication_keys = True
 
-    def get_url_params(
-        self, context: Optional[dict], next_page_token: Optional[Any]
-    ) -> Dict[str, Any]:
-        params = super().get_url_params(context, next_page_token)
-        params["channel"] = context["channel_id"]
-        return params
+    def parse_response(self, response: requests.Response) -> Iterable[dict]:
+        """Parse the response and return an iterator of result rows."""
+        user_list = extract_jsonpath(self.records_jsonpath, input=response.json())
+        return [{"user_id": ii} for ii in user_list]
 
 
 class MessagesStream(SlackStream):
@@ -76,6 +79,21 @@ class ThreadsStream(SlackStream):
         if start_time:
             params["oldest"] = start_time.strftime("%s")
         return params
+
+    def get_starting_timestamp(self, context: Optional[dict]) -> Optional[datetime]:
+        """
+        Threads can continue to have messages for weeks after the original message
+        was posted, so we cannot assume that we have scraped all message replies
+        at the same time we scrape the original message. This function will return
+        the starting timestamp for the EARLIEST of either the regular starting timestamp
+        (e.g. for full syncs) or the THREAD_LOOKBACK_DAYS days before the current run.
+        A longer THREAD_LOOKBACK_DAYS will result in longer incremental sync runs.
+        """
+        stream_start_time = super().get_starting_timestamp(context)
+        lookback_start_time = datetime.now(tz=timezone.utc) - timedelta(self.config["thread_lookback_days"])
+        if lookback_start_time < stream_start_time:
+            return lookback_start_time
+        return stream_start_time
 
 
 class UsersStream(SlackStream):
