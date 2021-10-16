@@ -1,7 +1,8 @@
 """REST client handling, including SlackStream base class."""
 
+import requests
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Text, Optional
 
 from singer_sdk.streams import RESTStream
 from singer_sdk.authenticators import BearerTokenAuthenticator
@@ -36,14 +37,11 @@ class SlackStream(RESTStream):
         self, context: Optional[dict], next_page_token: Optional[Any]
     ) -> Dict[str, Any]:
         """Return a dictionary of values to be used in URL parameterization."""
-        params: dict = {}
+        params = {}
         if next_page_token:
             params["cursor"] = next_page_token
         if self._page_size:
             params["limit"] = self._page_size
-        if context:
-            if context.get("channel_id"):
-                params["channel"] = context["channel_id"]
         return params
 
     def post_process(self, row: dict, context: Optional[dict]) -> dict:
@@ -51,3 +49,17 @@ class SlackStream(RESTStream):
         if self.max_requests_per_minute:
             time.sleep(60.0 / self.max_requests_per_minute)
         return row
+
+    def join_channel(self, channel_id: Text) -> requests.Response:
+        url = f"{self.url_base}/conversations.join"
+        params = {"channel": channel_id}
+        response = self.requests_session.post(url=url, params=params)
+        if response.json().get("ok"):
+            self.logger.info("Successfully joined channel: %s", channel_id)
+            return response
+        self.logger.warning(
+            "Failed to join channel: %s. Error:",
+            channel_id,
+            response.json().get("error"),
+        )
+        return response

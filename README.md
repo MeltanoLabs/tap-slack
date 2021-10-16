@@ -46,17 +46,11 @@ features:
 oauth_config:
   scopes:
     bot:
+      - channels:join
       - channels:history
       - channels:read
-      - groups:history
-      - groups:read
-      - im:history
-      - im:read
-      - mpim:history
-      - mpim:read
       - users:read
       - users:read.email
-      - channels:join
 settings:
   org_deploy_enabled: false
   socket_mode_enabled: false

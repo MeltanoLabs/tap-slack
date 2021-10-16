@@ -21,6 +21,17 @@ class ChannelsStream(SlackStream):
         """Override default to return context dictionary for child streams."""
         return {"channel_id": record["id"]}
 
+    def get_url_params(
+        self, context: Optional[dict], next_page_token: Optional[Any]
+    ) -> Dict[str, Any]:
+        params = super().get_url_params(context, next_page_token)
+        params["exclude_archived"] = True
+        params["include_shared"] = True
+        params[
+            "types"
+        ] = "public_channel"  # may also be 'private_channel', 'mpim', 'im'
+        return params
+
 
 class ChannelMembersStream(SlackStream):
     name = "channel_members"
@@ -33,7 +44,6 @@ class ChannelMembersStream(SlackStream):
     ignore_parent_replication_keys = True
 
     def parse_response(self, response: requests.Response) -> Iterable[dict]:
-        """Parse the response and return an iterator of result rows."""
         user_list = extract_jsonpath(self.records_jsonpath, input=response.json())
         return [{"user_id": ii} for ii in user_list]
 
@@ -57,6 +67,8 @@ class MessagesStream(SlackStream):
         start_time = self.get_starting_timestamp(context)
         if start_time:
             params["oldest"] = start_time.strftime("%s")
+        if context.get("channel_id"):
+            params["channel"] = context["channel_id"]
         return params
 
 
@@ -78,6 +90,8 @@ class ThreadsStream(SlackStream):
         start_time = self.get_starting_timestamp(context)
         if start_time:
             params["oldest"] = start_time.strftime("%s")
+        if context.get("channel_id"):
+            params["channel"] = context["channel_id"]
         return params
 
     def get_starting_timestamp(self, context: Optional[dict]) -> Optional[datetime]:
@@ -90,7 +104,9 @@ class ThreadsStream(SlackStream):
         A longer THREAD_LOOKBACK_DAYS will result in longer incremental sync runs.
         """
         stream_start_time = super().get_starting_timestamp(context)
-        lookback_start_time = datetime.now(tz=timezone.utc) - timedelta(self.config["thread_lookback_days"])
+        lookback_start_time = datetime.now(tz=timezone.utc) - timedelta(
+            self.config["thread_lookback_days"]
+        )
         if lookback_start_time < stream_start_time:
             return lookback_start_time
         return stream_start_time

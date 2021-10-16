@@ -41,6 +41,4 @@ schema = th.PropertiesList(
     ),
     th.Property("previous_names", th.ArrayType(th.StringType)),
     th.Property("num_members", th.IntegerType),
-    th.Property("members", th.ArrayType(th.StringType)),
-    th.Property("channel_id", th.StringType),
 ).to_dict()
