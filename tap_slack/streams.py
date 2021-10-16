@@ -21,15 +21,18 @@ class ChannelsStream(SlackStream):
         """Override default to return context dictionary for child streams."""
         return {"channel_id": record["id"]}
 
+    def post_process(self, row: dict, context: Optional[dict]) -> dict:
+        if not row["is_member"]:
+            self.join_channel(row["id"])
+        return super().post_process(row, context)
+
     def get_url_params(
         self, context: Optional[dict], next_page_token: Optional[Any]
     ) -> Dict[str, Any]:
         params = super().get_url_params(context, next_page_token)
         params["exclude_archived"] = True
         params["include_shared"] = True
-        params[
-            "types"
-        ] = "public_channel"  # may also be 'private_channel', 'mpim', 'im'
+        params["types"] = "public_channel"
         return params
 
 
@@ -45,7 +48,7 @@ class ChannelMembersStream(SlackStream):
 
     def parse_response(self, response: requests.Response) -> Iterable[dict]:
         user_list = extract_jsonpath(self.records_jsonpath, input=response.json())
-        return [{"user_id": ii} for ii in user_list]
+        yield from ({"user_id": ii} for ii in user_list)
 
 
 class MessagesStream(SlackStream):
@@ -64,7 +67,7 @@ class MessagesStream(SlackStream):
         self, context: Optional[dict], next_page_token: Optional[Any]
     ) -> Dict[str, Any]:
         params = super().get_url_params(context, next_page_token)
-        start_time = self.get_starting_timestamp(context)
+        start_time = self.get_starting_replication_key_value(context)
         if start_time:
             params["oldest"] = start_time.strftime("%s")
         if context.get("channel_id"):
@@ -89,6 +92,7 @@ class ThreadsStream(SlackStream):
         params = super().get_url_params(context, next_page_token)
         start_time = self.get_starting_timestamp(context)
         if start_time:
+            self.logger.warning(start_time)
             params["oldest"] = start_time.strftime("%s")
         if context.get("channel_id"):
             params["channel"] = context["channel_id"]
@@ -103,7 +107,7 @@ class ThreadsStream(SlackStream):
         (e.g. for full syncs) or the THREAD_LOOKBACK_DAYS days before the current run.
         A longer THREAD_LOOKBACK_DAYS will result in longer incremental sync runs.
         """
-        stream_start_time = super().get_starting_timestamp(context)
+        stream_start_time = super().get_starting_replication_key_value(context)
         lookback_start_time = datetime.now(tz=timezone.utc) - timedelta(
             self.config["thread_lookback_days"]
         )
