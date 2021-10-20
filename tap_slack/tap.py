@@ -4,12 +4,13 @@ from typing import List
 
 from singer_sdk import Tap, Stream
 from singer_sdk import typing as th
+from singer_sdk.helpers._compat import final
 
 from tap_slack.streams import (
     ChannelsStream,
     ChannelMembersStream,
     MessagesStream,
-    ThreadsStream,
+    # ThreadsStream,
     UsersStream,
 )
 
@@ -17,7 +18,7 @@ STREAM_TYPES = [
     ChannelsStream,
     ChannelMembersStream,
     MessagesStream,
-    ThreadsStream,
+    # ThreadsStream,
     UsersStream,
 ]
 
@@ -38,12 +39,6 @@ class TapSlack(Tap):
             "start_date",
             th.DateTimeType,
             description="The earliest record date to sync",
-        ),
-        th.Property(
-            "auto_join_channels",
-            th.BooleanType,
-            default=True,
-            description="Whether the bot user should attempt to join channels that it has not yet joined. The bot user must be a member of the channel to retrieve messages.",
         ),
         th.Property(
             "thread_lookback_days",

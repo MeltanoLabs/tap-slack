@@ -12,8 +12,8 @@ from singer_sdk.authenticators import BearerTokenAuthenticator
 class SlackStream(RESTStream):
     """Slack stream class."""
 
-    url_base = "https://slack.com/api"
     _page_size = 500
+    url_base = "https://slack.com/api"
     max_requests_per_minute = 200
     records_jsonpath = "$[*]"
     next_page_token_jsonpath = "$.response_metadata.next_cursor"
@@ -26,14 +26,6 @@ class SlackStream(RESTStream):
             token=self.config.get("api_key"),
         )
 
-    @property
-    def http_headers(self) -> dict:
-        """Return the http headers needed."""
-        headers = {}
-        if "user_agent" in self.config:
-            headers["User-Agent"] = self.config.get("user_agent")
-        return headers
-
     def get_url_params(
         self, context: Optional[dict], next_page_token: Optional[Any]
     ) -> Dict[str, Any]:
@@ -43,6 +35,8 @@ class SlackStream(RESTStream):
             params["cursor"] = next_page_token
         if self._page_size:
             params["limit"] = self._page_size
+        if context and "channel_id" in context:
+            params["channel"] = context["channel_id"]
         return params
 
     def post_process(self, row: dict, context: Optional[dict]) -> dict:
@@ -50,17 +44,3 @@ class SlackStream(RESTStream):
         if self.max_requests_per_minute:
             time.sleep(60.0 / self.max_requests_per_minute)
         return row
-
-    def join_channel(self, channel_id: Text) -> requests.Response:
-        url = f"{self.url_base}/conversations.join"
-        params = {"channel": channel_id}
-        response = self.requests_session.post(url=url, params=params)
-        if response.json().get("ok"):
-            self.logger.info("Successfully joined channel: %s", channel_id)
-            return response
-        self.logger.warning(
-            "Failed to join channel: %s. Error:",
-            channel_id,
-            response.json().get("error"),
-        )
-        return response
