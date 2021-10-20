@@ -1,8 +1,8 @@
-# tap-slack
+# tap-slack [Under Development]
 
-`tap-slack` is a Singer tap for Slack.
+`tap-slack` is a Singer tap for Slack, built with the [Meltano Tap SDK](https://sdk.meltano.com) for Singer Taps.
 
-Built with the [Meltano Tap SDK](https://sdk.meltano.com) for Singer Taps.
+**THIS PROJECT IS CURRENTLY UNDER DEVELOPMENT AND NOT SUITABLE FOR USE**
 
 ## Installation
 
