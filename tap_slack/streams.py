@@ -18,16 +18,19 @@ class ChannelsStream(SlackStream):
     schema = schemas.channels
 
     def get_child_context(self, record: dict, context: Optional[dict]) -> dict:
-        """Override default to return context dictionary for child streams."""
+        """Return context dictionary for child stream."""
         return {"channel_id": record["id"]}
 
     def get_url_params(
         self, context: Optional[dict], next_page_token: Optional[Any]
     ) -> Dict[str, Any]:
+        """
+        Options for filtering the channels to return and extract messages from.
+        """
         params = super().get_url_params(context, next_page_token)
-        params["exclude_archived"] = True
-        params["include_shared"] = True
-        params["types"] = "public_channel"
+        selected_channel_types = ["public_channel"] # "mpim", "private_channel", "im"
+        params["exclude_archived"] = False
+        params["types"] = ",".join(selected_channel_types)
         return params
 
 
@@ -78,8 +81,6 @@ class MessagesStream(SlackStream):
 #     ignore_parent_replication_key = True
 #     max_requests_per_minute = 50
 #     schema = schemas.threads
-
-# if thread_ts
 
 #     def get_url_params(
 #         self, context: Optional[dict], next_page_token: Optional[Any]

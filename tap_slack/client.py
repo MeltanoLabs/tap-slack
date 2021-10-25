@@ -1,7 +1,5 @@
 """REST client handling, including SlackStream base class."""
 
-import datetime
-import requests
 import time
 from typing import Any, Dict, Text, Optional
 
