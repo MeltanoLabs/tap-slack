@@ -79,7 +79,7 @@ class MessagesStream(SlackStream):
 #     max_requests_per_minute = 50
 #     schema = schemas.threads
 
-    # if thread_ts
+# if thread_ts
 
 #     def get_url_params(
 #         self, context: Optional[dict], next_page_token: Optional[Any]
