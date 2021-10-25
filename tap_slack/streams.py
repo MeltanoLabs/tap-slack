@@ -21,12 +21,8 @@ class ChannelsStream(SlackStream):
         """Return context dictionary for child stream."""
         return {"channel_id": record["id"]}
 
-    def get_url_params(
-        self, context: Optional[dict], next_page_token: Optional[Any]
-    ) -> Dict[str, Any]:
-        """
-        Options for filtering the channels to return and extract messages from.
-        """
+    def get_url_params(self, context, next_page_token):
+        """Augment default to filter channel types to return and extract messages from."""
         params = super().get_url_params(context, next_page_token)
         selected_channel_types = ["public_channel"] # "mpim", "private_channel", "im"
         params["exclude_archived"] = False
@@ -86,9 +82,8 @@ class MessagesStream(SlackStream):
         A longer THREAD_LOOKBACK_DAYS will result in longer incremental sync runs.
         """
         stream_start_time = super().get_starting_timestamp(context)
-        lookback_start_time = datetime.now(tz=timezone.utc) - timedelta(
-            self.config["thread_lookback_days"]
-        )
+        lookback_days = timedelta(self.config["thread_lookback_days"])
+        lookback_start_time = datetime.now(tz=timezone.utc) - lookback_days
         if lookback_start_time < stream_start_time:
             return lookback_start_time
         return stream_start_time
@@ -101,13 +96,6 @@ class ThreadsStream(SlackStream):
     records_jsonpath = "messages.[*]"
     max_requests_per_minute = 50
     schema = schemas.threads
-
-    def get_url_params(
-        self, context: Optional[dict], next_page_token: Optional[Any]
-    ) -> Dict[str, Any]:
-        params = super().get_url_params(context, next_page_token)
-        params["ts"] = context["thread_ts"]
-        return params
 
 
 class UsersStream(SlackStream):

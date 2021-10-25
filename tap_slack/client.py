@@ -35,10 +35,14 @@ class SlackStream(RESTStream):
             params["limit"] = self._page_size
         if context and "channel_id" in context:
             params["channel"] = context["channel_id"]
+        if context and "thread_ts" in context:
+            params["ts"] = context["thread_ts"]
         return params
 
-    def post_process(self, row: dict, context: Optional[dict]) -> dict:
-        """Apply rate throttling for taps that are likely to run into issues."""
+
+    def get_next_page_token(self, response, previous_token):
+        """Override default to apply rate throttling for streams."""
+        token = super().get_next_page_token(response, previous_token)
         if self.max_requests_per_minute:
             time.sleep(60.0 / self.max_requests_per_minute)
-        return row
+        return token
