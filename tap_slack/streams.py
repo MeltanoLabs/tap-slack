@@ -1,7 +1,5 @@
 """Stream type classes for tap-slack."""
 
-import requests
-
 from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, Optional, Iterable
 from singer_sdk.helpers.jsonpath import extract_jsonpath
@@ -44,6 +42,10 @@ class ChannelMembersStream(SlackStream):
         user_list = extract_jsonpath(self.records_jsonpath, input=response.json())
         yield from ({"member_id": ii} for ii in user_list)
 
+    @property
+    def state_partitioning_keys(self):
+        "Remove partitioning keys to prevent state logging for individual threads."
+        return []
 
 class MessagesStream(SlackStream):
     name = "messages"
@@ -57,6 +59,15 @@ class MessagesStream(SlackStream):
     ignore_parent_replication_key = True
     max_requests_per_minute = 50
 
+    @property
+    def threads_stream_starting_timestamp(self, context):
+        lookback_days = timedelta(self.config["thread_lookback_days"])
+        return datetime.now(tz=timezone.utc) - lookback_days
+
+    @property
+    def messages_stream_starting_timestamp(self, context):
+        return super().get_starting_timestamp(context)
+
     def get_url_params(self, context, next_page_token):
         """Augment default to implement incremental syncing."""
         params = super().get_url_params(context, next_page_token)
@@ -66,10 +77,15 @@ class MessagesStream(SlackStream):
         return params
 
     def post_process(self, row: dict, context: Optional[dict]) -> dict:
-        """Directly invoke the threads stream sync on relevant messages."""
+        """
+        Directly invoke the threads stream sync on relevant messages,
+        and filter out messages that have already been synced before.
+        """
         if row.get("thread_ts") and self._tap.streams["threads"].selected:
             threads_context = {**context, **{"thread_ts": row["ts"]}}
             self._tap.streams["threads"].sync(context=threads_context)
+        if row["ts"] < self.messages_stream_starting_timestamp:
+            return None
         return row
 
     def get_starting_timestamp(self, context: Optional[dict]) -> Optional[datetime]:
@@ -81,12 +97,12 @@ class MessagesStream(SlackStream):
         (e.g. for full syncs) or the THREAD_LOOKBACK_DAYS days before the current run.
         A longer THREAD_LOOKBACK_DAYS will result in longer incremental sync runs.
         """
-        stream_start_time = super().get_starting_timestamp(context)
-        lookback_days = timedelta(self.config["thread_lookback_days"])
-        lookback_start_time = datetime.now(tz=timezone.utc) - lookback_days
-        if lookback_start_time < stream_start_time:
-            return lookback_start_time
-        return stream_start_time
+        if not self.messages_stream_starting_timestamp:
+            return None
+        elif self.threads_stream_starting_timestamp < self.messages_stream_starting_timestamp:
+            return self.threads_stream_starting_timestamp
+        else:
+            return self.messages_stream_starting_timestamp
 
 
 class ThreadsStream(SlackStream):
