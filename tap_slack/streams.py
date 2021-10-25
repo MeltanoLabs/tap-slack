@@ -17,7 +17,7 @@ class ChannelsStream(SlackStream):
     records_jsonpath = "channels.[*]"
     schema = schemas.channels
 
-    def get_child_context(self, record: dict, context: Optional[dict]) -> dict:
+    def get_child_context(self, record, context):
         """Return context dictionary for child stream."""
         return {"channel_id": record["id"]}
 
@@ -40,7 +40,7 @@ class ChannelMembersStream(SlackStream):
 
     ignore_parent_replication_keys = True
 
-    def parse_response(self, response: requests.Response) -> Iterable[dict]:
+    def parse_response(self, response):
         user_list = extract_jsonpath(self.records_jsonpath, input=response.json())
         yield from ({"member_id": ii} for ii in user_list)
 
@@ -57,9 +57,8 @@ class MessagesStream(SlackStream):
     ignore_parent_replication_key = True
     max_requests_per_minute = 50
 
-    def get_url_params(
-        self, context: Optional[dict], next_page_token: Optional[Any]
-    ) -> Dict[str, Any]:
+    def get_url_params(self, context, next_page_token):
+        """Augment default to implement incremental syncing."""
         params = super().get_url_params(context, next_page_token)
         start_time = self.get_starting_timestamp(context)
         if start_time:
@@ -67,6 +66,7 @@ class MessagesStream(SlackStream):
         return params
 
     def post_process(self, row: dict, context: Optional[dict]) -> dict:
+        """Directly invoke the threads stream sync on relevant messages."""
         if row.get("thread_ts") and self._tap.streams["threads"].selected:
             threads_context = {**context, **{"thread_ts": row["ts"]}}
             self._tap.streams["threads"].sync(context=threads_context)
@@ -90,6 +90,11 @@ class MessagesStream(SlackStream):
 
 
 class ThreadsStream(SlackStream):
+    """
+    The threads stream is directly invoked by the Messages stream, but not via
+    standard parent-child relationship. Instead, parsed messages that have a
+    more recent "last_reply_at" timestamp will have a FULL_TABLE sync performed.
+    """
     name = "threads"
     path = "/conversations.replies"
     primary_keys = ["channel_id", "thread_ts", "ts"]
@@ -97,6 +102,10 @@ class ThreadsStream(SlackStream):
     max_requests_per_minute = 50
     schema = schemas.threads
 
+    @property
+    def state_partitioning_keys(self):
+        "Remove partitioning keys to prevent state logging for individual threads."
+        return []
 
 class UsersStream(SlackStream):
     name = "users"
