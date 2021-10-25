@@ -10,7 +10,7 @@ from tap_slack.streams import (
     ChannelsStream,
     ChannelMembersStream,
     MessagesStream,
-    # ThreadsStream,
+    ThreadsStream,
     UsersStream,
 )
 
@@ -18,7 +18,7 @@ STREAM_TYPES = [
     ChannelsStream,
     ChannelMembersStream,
     MessagesStream,
-    # ThreadsStream,
+    ThreadsStream,
     UsersStream,
 ]
 
@@ -43,7 +43,7 @@ class TapSlack(Tap):
         th.Property(
             "thread_lookback_days",
             th.IntegerType,
-            default=3,
+            default=1,
             description="The number of days to look in the past for new thread replies to existing messages",
         ),
     ).to_dict()

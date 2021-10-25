@@ -70,43 +70,44 @@ class MessagesStream(SlackStream):
             params["oldest"] = start_time.strftime("%s")
         return params
 
+    def post_process(self, row: dict, context: Optional[dict]) -> dict:
+        if row.get("thread_ts") and self._tap.streams["threads"].selected:
+            threads_context = {**context, **{"thread_ts": row["ts"]}}
+            self._tap.streams["threads"].sync(context=threads_context)
+        return row
 
-# class ThreadsStream(SlackStream):
-#     name = "threads"
-#     path = "/conversations.replies"
-#     primary_keys = ["channel_id", "message_ts", "ts"]
-#     replication_key = "ts"
-#     records_jsonpath = "messages.[*]"
-#     parent_stream_type = ChannelsStream
-#     ignore_parent_replication_key = True
-#     max_requests_per_minute = 50
-#     schema = schemas.threads
+    def get_starting_timestamp(self, context: Optional[dict]) -> Optional[datetime]:
+        """
+        Threads can continue to have messages for weeks after the original message
+        was posted, so we cannot assume that we have scraped all message replies
+        at the same time we scrape the original message. This function will return
+        the starting timestamp for the EARLIEST of either the regular starting timestamp
+        (e.g. for full syncs) or the THREAD_LOOKBACK_DAYS days before the current run.
+        A longer THREAD_LOOKBACK_DAYS will result in longer incremental sync runs.
+        """
+        stream_start_time = super().get_starting_timestamp(context)
+        lookback_start_time = datetime.now(tz=timezone.utc) - timedelta(
+            self.config["thread_lookback_days"]
+        )
+        if lookback_start_time < stream_start_time:
+            return lookback_start_time
+        return stream_start_time
 
-#     def get_url_params(
-#         self, context: Optional[dict], next_page_token: Optional[Any]
-#     ) -> Dict[str, Any]:
-#         params = super().get_url_params(context, next_page_token)
-#         start_time = self.get_starting_timestamp(context)
-#         if start_time:
-#             params["oldest"] = start_time.strftime("%s")
-#         return params
 
-#     def get_starting_timestamp(self, context: Optional[dict]) -> Optional[datetime]:
-#         """
-#         Threads can continue to have messages for weeks after the original message
-#         was posted, so we cannot assume that we have scraped all message replies
-#         at the same time we scrape the original message. This function will return
-#         the starting timestamp for the EARLIEST of either the regular starting timestamp
-#         (e.g. for full syncs) or the THREAD_LOOKBACK_DAYS days before the current run.
-#         A longer THREAD_LOOKBACK_DAYS will result in longer incremental sync runs.
-#         """
-#         stream_start_time = super().get_starting_timestamp(context)
-#         lookback_start_time = datetime.now(tz=timezone.utc) - timedelta(
-#             self.config["thread_lookback_days"]
-#         )
-#         if lookback_start_time < stream_start_time:
-#             return lookback_start_time
-#         return stream_start_time
+class ThreadsStream(SlackStream):
+    name = "threads"
+    path = "/conversations.replies"
+    primary_keys = ["channel_id", "thread_ts", "ts"]
+    records_jsonpath = "messages.[*]"
+    max_requests_per_minute = 50
+    schema = schemas.threads
+
+    def get_url_params(
+        self, context: Optional[dict], next_page_token: Optional[Any]
+    ) -> Dict[str, Any]:
+        params = super().get_url_params(context, next_page_token)
+        params["ts"] = context["thread_ts"]
+        return params
 
 
 class UsersStream(SlackStream):

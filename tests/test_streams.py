@@ -1,11 +1,3 @@
-import json
-
-from typing import List
-
-
-TEST_CHANNEL_ID = "C02HGHA84KH"
-
-
 def stream_record_comparison(tap, stream_name, full_sync_records):
     "The full sync of the stream should have returned at least 1 record."
     record_count = full_sync_records["RECORD"][stream_name]["count"]
@@ -38,14 +30,15 @@ def test_channels_stream(tap_slack, full_sync_records):
 
 def test_channel_members_stream(tap_slack, full_sync_records):
     stream_record_comparison(tap_slack, "channel_members", full_sync_records)
-    stream_schema_comparison(tap_slack, "channels", full_sync_records)
+    stream_schema_comparison(tap_slack, "channel_members", full_sync_records)
 
 def test_messages_stream(tap_slack, full_sync_records):
     stream_record_comparison(tap_slack, "messages", full_sync_records)
 
-# def test_threads_sync(tap_slack, full_sync_records):
-    # standard_stream_test(tap_slack, "threads", full_sync_records)
+def test_threads_stream(tap_slack, full_sync_records):
+    stream_record_comparison(tap_slack, "threads", full_sync_records)
+    stream_schema_comparison(tap_slack, "threads", full_sync_records)
 
 def test_users_stream(tap_slack, full_sync_records):
     stream_record_comparison(tap_slack, "users", full_sync_records)
-    stream_schema_comparison(tap_slack, "channels", full_sync_records)
+    stream_schema_comparison(tap_slack, "users", full_sync_records)

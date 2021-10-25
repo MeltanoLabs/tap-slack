@@ -2,6 +2,7 @@ from singer_sdk import typing as th
 
 schema = th.PropertiesList(
     th.Property("channel_id", th.StringType, required=True),
+    th.Property("message_ts", th.DateTimeType, required=True),
     th.Property("ts", th.DateTimeType, required=True),
     th.Property(
         "blocks",
