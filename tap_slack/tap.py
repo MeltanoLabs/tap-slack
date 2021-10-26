@@ -52,6 +52,12 @@ class TapSlack(Tap):
             default=["public_channel"],
             description="The types of conversations the tap will attempt to extract data from. Must be one of 'public_channel', 'mpim', 'private_channel', or 'im'. Note that the Slack app must have the appropriate privileges and be a member of the conversations to sync messages.",
         ),
+        th.Property(
+            "auto_join_channels",
+            th.BooleanType,
+            default=True,
+            description="Whether the bot user should attempt to join channels that it has not yet joined. The bot user must be a member of the channel to retrieve messages.",
+        ),
     ).to_dict()
 
     def discover_streams(self) -> List[Stream]:

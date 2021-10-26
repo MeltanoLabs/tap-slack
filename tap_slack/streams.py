@@ -1,4 +1,5 @@
 """Stream type classes for tap-slack."""
+import requests
 
 from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, Optional, Iterable
@@ -26,6 +27,25 @@ class ChannelsStream(SlackStream):
         params["types"] = ",".join(self.config["channel_types"])
         return params
 
+    def post_process(self, row, context):
+        "Join the channel if not a member, but emit no data."
+        row = super().post_process(row, context)
+        if not row["is_member"]:
+            self._join_channel(row["id"])
+        return row
+
+    def _join_channel(self, channel_id: str) -> requests.Response:
+        url = f"{self.url_base}/conversations.join"
+        params = {"channel": channel_id}
+        response = self.requests_session.post(
+            url=url,
+            params=params,
+            headers=self.authenticator.auth_headers
+        )
+        if not response.json().get("ok"):
+            self.logger.warning("Error joining channel %s: %s", response.json().get("error"))
+        self.logger.info("Successfully joined channel: %s", channel_id)  
+
 
 class ChannelMembersStream(SlackStream):
     name = "channel_members"
@@ -36,10 +56,16 @@ class ChannelMembersStream(SlackStream):
     schema = schemas.channel_members
 
     ignore_parent_replication_keys = True
+    state_partitioning_keys = []
 
     def parse_response(self, response):
         user_list = extract_jsonpath(self.records_jsonpath, input=response.json())
         yield from ({"member_id": ii} for ii in user_list)
+
+    def post_process(self, row, context=None):
+        row = super().post_process(row, context=context)
+        row["channel_id"] = context.get("channel_id")
+        return row
 
 
 class MessagesStream(SlackStream):
@@ -115,10 +141,12 @@ class ThreadsStream(SlackStream):
     max_requests_per_minute = 50
     schema = schemas.threads
 
-    @property
-    def state_partitioning_keys(self):
-        "Remove thread_ts to prevent state logging for individual threads."
-        return ["channel_id"]
+    state_partitioning_keys = []
+
+    def post_process(self, row, context=None):
+        row = super().post_process(row, context=context)
+        row["channel_id"] = context.get("channel_id")
+        return row
 
 
 class UsersStream(SlackStream):
