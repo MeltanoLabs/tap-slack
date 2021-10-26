@@ -40,7 +40,6 @@ def test_messages_stream(tap_slack, full_sync_records):
 
 def test_threads_stream(tap_slack, full_sync_records):
     stream_record_comparison(tap_slack, "threads", full_sync_records)
-    stream_schema_comparison(tap_slack, "threads", full_sync_records)
 
 
 def test_users_stream(tap_slack, full_sync_records):

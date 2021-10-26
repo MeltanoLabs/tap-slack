@@ -10,7 +10,7 @@ from tap_slack.tap import TapSlack
 def sample_config():
     yield {
         "api_key": os.environ.get("TAP_SLACK_API_KEY"),
-        "start_date": datetime.datetime.today().strftime("%Y-%m-%d"),
+        "start_date": "2021-01-01T00:00:00Z",
     }
 
 

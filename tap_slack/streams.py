@@ -41,11 +41,6 @@ class ChannelMembersStream(SlackStream):
         user_list = extract_jsonpath(self.records_jsonpath, input=response.json())
         yield from ({"member_id": ii} for ii in user_list)
 
-    @property
-    def state_partitioning_keys(self):
-        "Remove partitioning keys to prevent state logging for individual threads."
-        return []
-
 
 class MessagesStream(SlackStream):
     name = "messages"
@@ -122,8 +117,8 @@ class ThreadsStream(SlackStream):
 
     @property
     def state_partitioning_keys(self):
-        "Remove partitioning keys to prevent state logging for individual threads."
-        return []
+        "Remove thread_ts to prevent state logging for individual threads."
+        return ["channel_id"]
 
 
 class UsersStream(SlackStream):

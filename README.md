@@ -2,14 +2,12 @@
 
 `tap-slack` is a Singer tap for Slack, built with the [Meltano Tap SDK](https://sdk.meltano.com) for Singer Taps.
 
-**THIS PROJECT IS CURRENTLY UNDER DEVELOPMENT AND NOT SUITABLE FOR USE**
-
 ## Installation
 
-- [ ] `Developer TODO:` Update the below as needed to correctly describe the install procedure. For instance, if you do not have a PyPi repo, or if you want users to directly install from your git repo, you can modify this step as appropriate.
+You can install this repository directly from the Github repo. For example, by running:
 
 ```bash
-pipx install tap-slack
+pipx install https://github.com/MeltanoLabs/tap-slack.git
 ```
 
 ## Configuration
@@ -26,24 +24,25 @@ tap-slack --about
 ### Creating the Tap-Slack App
 
 In order to access the records in your workspace, you will need to create a new Slack App.
-The token used to authenticate against the API will require access to several API endpoints and require the following scopes:
-
-
-Below is an example App Manifest that you can use for your workspace.
+Below is an example App Manifest that you can use for your workspace. If you would like to
+access additional channels, such as direct messages, you will need to provide additional scopes
+to your Slack app.
 
 ```
 _metadata:
   major_version: 1
   minor_version: 1
 display_information:
-  name: tap-slack
-  description: Slack App to support the implementation of Singer.io tap-slack.
-  long_description: This application is used for extracting channel, user, and message data from the Slack workspace via the tap-slack application. On GitHub at https://github.com/MeltanoLabs/tap-slack.
+  name: MeltanoLabs Tap-Slack
+  description: Slack App to support the implementation of Singer.io tap-slack
+  long_description: This application is used for extracting channel, user, and message data from the Slack workspace via the tap-slack application. Found on GitHub at https://github.com/MeltanoLabs/tap-slack.
 features:
   bot_user:
-    display_name: Tap Slack
+    display_name: MeltanoLabs Tap-Slack
     always_online: false
 oauth_config:
+  redirect_urls:
+    - https://meltano.com/
   scopes:
     bot:
       - channels:join
@@ -60,7 +59,8 @@ settings:
 ### Rate Limits
 
 The Slack API implements a tiered rate limiting system, where certain methods operate under
-different rate limitations. For more information, see Slack's [rate limits documentation](https://api.slack.com/docs/rate-limits).
+different rate limitations. In this tap, rate limiting is handled by adding a pause
+between API calls. For more information, see Slack's [rate limits documentation](https://api.slack.com/docs/rate-limits).
 
 ## Usage
 
@@ -96,33 +96,6 @@ You can also test the `tap-slack` CLI interface directly using `poetry run`:
 
 ```bash
 poetry run tap-slack --help
-```
-
-### Testing with [Meltano](https://www.meltano.com)
-
-_**Note:** This tap will work in any Singer environment and does not require Meltano.
-Examples here are for convenience and to streamline end-to-end orchestration scenarios._
-
-Your project comes with a custom `meltano.yml` project file already created. Open the `meltano.yml` and follow any _"TODO"_ items listed in
-the file.
-
-Next, install Meltano (if you haven't already) and any needed plugins:
-
-```bash
-# Install meltano
-pipx install meltano
-# Initialize meltano within this directory
-cd tap-slack
-meltano install
-```
-
-Now you can test and orchestrate using Meltano:
-
-```bash
-# Test invocation:
-meltano invoke tap-slack --version
-# OR run a test `elt` pipeline:
-meltano elt tap-slack target-jsonl
 ```
 
 ### SDK Dev Guide
