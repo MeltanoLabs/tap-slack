@@ -1,7 +1,7 @@
 from singer_sdk import typing as th
 
 schema = th.PropertiesList(
-    th.Property("id", th.StringType),
+    th.Property("id", th.StringType, required=True),
     th.Property("team_id", th.StringType),
     th.Property("name", th.StringType),
     th.Property("deleted", th.BooleanType),
@@ -18,7 +18,8 @@ schema = th.PropertiesList(
     th.Property("is_bot", th.BooleanType),
     th.Property("updated", th.StringType),
     th.Property("is_app_user", th.BooleanType),
-    th.Property("has_2fa", th.BooleanType),
+    th.Property("is_email_confirmed", th.BooleanType),
+    th.Property("who_can_share_contact_card", th.StringType),
     th.Property(
         "profile",
         th.ObjectType(

@@ -1,7 +1,7 @@
 from singer_sdk import typing as th
 
 schema = th.PropertiesList(
-    th.Property("id", th.StringType),
+    th.Property("id", th.StringType, required=True),
     th.Property("name", th.StringType),
     th.Property("is_channel", th.BooleanType),
     th.Property("is_group", th.BooleanType),
@@ -41,6 +41,4 @@ schema = th.PropertiesList(
     ),
     th.Property("previous_names", th.ArrayType(th.StringType)),
     th.Property("num_members", th.IntegerType),
-    th.Property("members", th.ArrayType(th.StringType)),
-    th.Property("channel_id", th.StringType),
 ).to_dict()

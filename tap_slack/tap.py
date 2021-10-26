@@ -4,6 +4,7 @@ from typing import List
 
 from singer_sdk import Tap, Stream
 from singer_sdk import typing as th
+from singer_sdk.helpers._compat import final
 
 from tap_slack.streams import (
     ChannelsStream,
@@ -15,10 +16,10 @@ from tap_slack.streams import (
 
 STREAM_TYPES = [
     ChannelsStream,
-    # ChannelMembersStream,
+    ChannelMembersStream,
     MessagesStream,
     ThreadsStream,
-    # UsersStream,
+    UsersStream,
 ]
 
 
@@ -40,10 +41,16 @@ class TapSlack(Tap):
             description="The earliest record date to sync",
         ),
         th.Property(
-            "lookback_window",
+            "thread_lookback_days",
             th.IntegerType,
-            default=7,
+            default=1,
             description="The number of days to look in the past for new thread replies to existing messages",
+        ),
+        th.Property(
+            "channel_types",
+            th.ArrayType(th.StringType),
+            default=["public_channel"],
+            description="The types of conversations the tap will attempt to extract data from. Must be one of 'public_channel', 'mpim', 'private_channel', or 'im'. Note that the Slack app must have the appropriate privileges and be a member of the conversations to sync messages.",
         ),
     ).to_dict()
 

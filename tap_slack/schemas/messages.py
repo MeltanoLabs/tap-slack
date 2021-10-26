@@ -1,7 +1,9 @@
 from singer_sdk import typing as th
 
 schema = th.PropertiesList(
-    th.Property("channel_id", th.StringType),
+    th.Property("channel_id", th.StringType, required=True),
+    th.Property("message_ts", th.DateTimeType, required=True),
+    th.Property("ts", th.DateTimeType, required=True),
     th.Property(
         "blocks",
         th.ArrayType(
@@ -35,6 +37,7 @@ schema = th.PropertiesList(
     th.Property("inviter", th.StringType),
     th.Property("is_delayed_message", th.BooleanType),
     th.Property("is_intro", th.BooleanType),
+    th.Property("is_locked", th.BooleanType),
     th.Property("is_starred", th.BooleanType),
     th.Property("last_read", th.StringType),
     th.Property("latest_reply", th.StringType),
@@ -64,7 +67,6 @@ schema = th.PropertiesList(
     th.Property("text", th.StringType),
     th.Property("thread_ts", th.StringType),
     th.Property("topic", th.StringType),
-    th.Property("ts", th.StringType),
     th.Property("type", th.StringType),
     th.Property("unread_count", th.IntegerType),
     th.Property("upload", th.BooleanType),

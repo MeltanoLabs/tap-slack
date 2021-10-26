@@ -23,24 +23,39 @@ tap is available by running:
 tap-slack --about
 ```
 
-### Source Authentication and Authorization
+### Creating the Tap-Slack App
 
+In order to access the records in your workspace, you will need to create a new Slack App.
 The token used to authenticate against the API will require access to several API endpoints and require the following scopes:
 
-- `channels` and `channel_members`
-  - `channels:read`
-  - `groups:read`
-  - `im:read`
-  - `mpim:read`
 
-- `messages` and `threads`
-  - `channels:history`
-  - `groups:history`
-  - `im:history`
-  - `mpim:history`
+Below is an example App Manifest that you can use for your workspace.
 
-- `users`
-  - `users:read`
+```
+_metadata:
+  major_version: 1
+  minor_version: 1
+display_information:
+  name: tap-slack
+  description: Slack App to support the implementation of Singer.io tap-slack.
+  long_description: This application is used for extracting channel, user, and message data from the Slack workspace via the tap-slack application. On GitHub at https://github.com/MeltanoLabs/tap-slack.
+features:
+  bot_user:
+    display_name: Tap Slack
+    always_online: false
+oauth_config:
+  scopes:
+    bot:
+      - channels:join
+      - channels:history
+      - channels:read
+      - users:read
+      - users:read.email
+settings:
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false
+```
 
 ### Rate Limits
 
