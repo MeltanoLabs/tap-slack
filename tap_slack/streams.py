@@ -22,9 +22,8 @@ class ChannelsStream(SlackStream):
     def get_url_params(self, context, next_page_token):
         """Augment default to filter channel types to return and extract messages from."""
         params = super().get_url_params(context, next_page_token)
-        selected_channel_types = ["public_channel"] # "mpim", "private_channel", "im"
         params["exclude_archived"] = False
-        params["types"] = ",".join(selected_channel_types)
+        params["types"] = ",".join(self.config["channel_types"])
         return params
 
 
@@ -47,6 +46,7 @@ class ChannelMembersStream(SlackStream):
         "Remove partitioning keys to prevent state logging for individual threads."
         return []
 
+
 class MessagesStream(SlackStream):
     name = "messages"
     parent_stream_type = ChannelsStream
@@ -60,13 +60,9 @@ class MessagesStream(SlackStream):
     max_requests_per_minute = 50
 
     @property
-    def threads_stream_starting_timestamp(self, context):
+    def threads_stream_starting_timestamp(self):
         lookback_days = timedelta(self.config["thread_lookback_days"])
         return datetime.now(tz=timezone.utc) - lookback_days
-
-    @property
-    def messages_stream_starting_timestamp(self, context):
-        return super().get_starting_timestamp(context)
 
     def get_url_params(self, context, next_page_token):
         """Augment default to implement incremental syncing."""
@@ -81,10 +77,11 @@ class MessagesStream(SlackStream):
         Directly invoke the threads stream sync on relevant messages,
         and filter out messages that have already been synced before.
         """
+        messages_stream_starting_timestamp = super().get_starting_timestamp(context)
         if row.get("thread_ts") and self._tap.streams["threads"].selected:
             threads_context = {**context, **{"thread_ts": row["ts"]}}
             self._tap.streams["threads"].sync(context=threads_context)
-        if row["ts"] < self.messages_stream_starting_timestamp:
+        if row["ts"] < messages_stream_starting_timestamp.strftime("%s"):
             return None
         return row
 
@@ -97,12 +94,16 @@ class MessagesStream(SlackStream):
         (e.g. for full syncs) or the THREAD_LOOKBACK_DAYS days before the current run.
         A longer THREAD_LOOKBACK_DAYS will result in longer incremental sync runs.
         """
-        if not self.messages_stream_starting_timestamp:
+        messages_stream_starting_timestamp = super().get_starting_timestamp(context)
+        if not messages_stream_starting_timestamp:
             return None
-        elif self.threads_stream_starting_timestamp < self.messages_stream_starting_timestamp:
+        elif (
+            self.threads_stream_starting_timestamp
+            < messages_stream_starting_timestamp
+        ):
             return self.threads_stream_starting_timestamp
         else:
-            return self.messages_stream_starting_timestamp
+            return messages_stream_starting_timestamp
 
 
 class ThreadsStream(SlackStream):
@@ -111,6 +112,7 @@ class ThreadsStream(SlackStream):
     standard parent-child relationship. Instead, parsed messages that have a
     more recent "last_reply_at" timestamp will have a FULL_TABLE sync performed.
     """
+
     name = "threads"
     path = "/conversations.replies"
     primary_keys = ["channel_id", "thread_ts", "ts"]
@@ -122,6 +124,7 @@ class ThreadsStream(SlackStream):
     def state_partitioning_keys(self):
         "Remove partitioning keys to prevent state logging for individual threads."
         return []
+
 
 class UsersStream(SlackStream):
     name = "users"

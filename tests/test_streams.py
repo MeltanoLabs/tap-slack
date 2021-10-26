@@ -28,16 +28,20 @@ def test_channels_stream(tap_slack, full_sync_records):
     stream_record_comparison(tap_slack, "channels", full_sync_records)
     stream_schema_comparison(tap_slack, "channels", full_sync_records)
 
+
 def test_channel_members_stream(tap_slack, full_sync_records):
     stream_record_comparison(tap_slack, "channel_members", full_sync_records)
     stream_schema_comparison(tap_slack, "channel_members", full_sync_records)
 
+
 def test_messages_stream(tap_slack, full_sync_records):
     stream_record_comparison(tap_slack, "messages", full_sync_records)
+
 
 def test_threads_stream(tap_slack, full_sync_records):
     stream_record_comparison(tap_slack, "threads", full_sync_records)
     stream_schema_comparison(tap_slack, "threads", full_sync_records)
+
 
 def test_users_stream(tap_slack, full_sync_records):
     stream_record_comparison(tap_slack, "users", full_sync_records)

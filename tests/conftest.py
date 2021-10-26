@@ -23,10 +23,7 @@ def tap_slack(sample_config):
 def full_sync_records(tap_slack, capsys):
     tap_slack.sync_all()
     stdout = capsys.readouterr().out
-    records = [
-        json.loads(ii) for ii in stdout.split("\n")
-        if "{" in ii and "}" in ii
-    ]
+    records = [json.loads(ii) for ii in stdout.split("\n") if "{" in ii and "}" in ii]
     parsed = analyze_records(records)
 
     yield parsed

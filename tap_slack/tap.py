@@ -46,6 +46,12 @@ class TapSlack(Tap):
             default=1,
             description="The number of days to look in the past for new thread replies to existing messages",
         ),
+        th.Property(
+            "channel_types",
+            th.ArrayType(th.StringType),
+            default=["public_channel"],
+            description="The types of conversations the tap will attempt to extract data from. Must be one of 'public_channel', 'mpim', 'private_channel', or 'im'. Note that the Slack app must have the appropriate privileges and be a member of the conversations to sync messages.",
+        ),
     ).to_dict()
 
     def discover_streams(self) -> List[Stream]:

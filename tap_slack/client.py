@@ -39,7 +39,6 @@ class SlackStream(RESTStream):
             params["ts"] = context["thread_ts"]
         return params
 
-
     def get_next_page_token(self, response, previous_token):
         """Override default to apply rate throttling for streams."""
         token = super().get_next_page_token(response, previous_token)
