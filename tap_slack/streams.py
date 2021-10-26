@@ -1,4 +1,5 @@
 """Stream type classes for tap-slack."""
+import requests
 
 from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, Optional, Iterable
@@ -25,6 +26,25 @@ class ChannelsStream(SlackStream):
         params["exclude_archived"] = False
         params["types"] = ",".join(self.config["channel_types"])
         return params
+
+    def post_process(self, row, context):
+        "Join the channel if not a member, but emit no data."
+        row = super().post_process(row, context)
+        if not row["is_member"]:
+            self._join_channel(row["id"])
+        return row
+
+    def _join_channel(self, channel_id: str) -> requests.Response:
+        url = f"{self.url_base}/conversations.join"
+        params = {"channel": channel_id}
+        response = self.requests_session.post(
+            url=url,
+            params=params,
+            headers=self.authenticator.auth_headers
+        )
+        if not response.json().get("ok"):
+            self.logger.warning("Error joining channel %s: %s", response.json().get("error"))
+        self.logger.info("Successfully joined channel: %s", channel_id)  
 
 
 class ChannelMembersStream(SlackStream):
