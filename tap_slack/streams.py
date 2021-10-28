@@ -51,7 +51,7 @@ class ChannelMembersStream(SlackStream):
     name = "channel_members"
     parent_stream_type = ChannelsStream
     path = "/conversations.members"
-    primary_keys = ["channel_id", "id"]
+    primary_keys = ["channel_id", "member_id"]
     records_jsonpath = "members.[*]"
     schema = schemas.channel_members
 

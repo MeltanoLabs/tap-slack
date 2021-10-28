@@ -13,6 +13,9 @@ schema = th.PropertiesList(
     th.Property("files", th.StringType),
     th.Property("upload", th.StringType),
     th.Property("display_as_bot", th.StringType),
+    th.Property("upload", th.StringType),
+    th.Property("edited", th.StringType),
+    th.Property("files", th.StringType),
     th.Property(
         "blocks",
         th.ArrayType(
