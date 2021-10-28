@@ -43,6 +43,9 @@ def test_threads_stream(stream_test_util):
     stream_test_util._test_stream_returns_at_least_one_record(stream_name)
     stream_test_util._test_stream_primary_key(stream_name)
 
+    stream_test_util._test_stream_attribute_is_unique(stream_name, "ts")
+    # stream_test_util._test_stream_attribute_is_valid_timestamp(stream_name, "ts")
+    stream_test_util._test_stream_attribute_is_not_null(stream_name, "ts")
 
 def test_users_stream(stream_test_util):
     stream_name = "users"

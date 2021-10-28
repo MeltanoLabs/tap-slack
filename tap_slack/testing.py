@@ -165,7 +165,7 @@ class StreamTestUtility(object):
     def _test_stream_primary_key(self, stream_name: str):
         "Test that all records for a stream's primary key are unique and non-null."
         primary_keys = self.tap.streams[stream_name].primary_keys
-        records = self.records[stream_name]
+        records = [r["record"] for r in self.records[stream_name]]
         record_ids = []
         for r in self.records[stream_name]:
             id = (r["record"][k] for k in primary_keys)
@@ -176,26 +176,26 @@ class StreamTestUtility(object):
 
     def _test_stream_attribute_contains_accepted_values(self, stream_name: str, attribute_name: str, accepted_values: List[Any]):
         "Test that a given attribute contains only accepted values."
-        records = self.records[stream_name]
+        records = [r["record"] for r in self.records[stream_name]]
 
         assert all(r[attribute_name] in accepted_values for r in records)
 
     def _test_stream_attribute_is_unique(self, stream_name: str, attribute_name: str):
         "Test that a given attribute contains unique values, ignoring nulls."
-        records = self.records[stream_name]
+        records = [r["record"] for r in self.records[stream_name]]
         values = [r[attribute_name] for r in records if r[attribute_name] is not None]
 
         assert len(set(values)) == len(values)
 
     def _test_stream_attribute_is_valid_timestamp(self, stream_name: str, attribute_name: str):
         "Test that a given attribute contains unique values, ignoring nulls."
-        records = self.records[stream_name]
+        records = [r["record"] for r in self.records[stream_name]]
         values = [r[attribute_name] for r in records if r[attribute_name] is not None]
 
         assert all(parser.parse(v) for v in values)
 
     def _test_stream_attribute_is_not_null(self, stream_name: str, attribute_name: str):
         "Test that a given attribute does not contain any null values."
-        records = self.records[stream_name]
+        records = [r["record"] for r in self.records[stream_name]]
 
         assert all(r[attribute_name] is not None for r in records)
