@@ -24,13 +24,13 @@ class TapTestUtility(object):
 
     ```
     @pytest.fixture(scope="session")
-    def stream_test_util():
+    def tap_test_util():
         test_util = StreamTestUtility(MyTap, config={})
         test_util.run_sync()
 
         yield test_util
 
-    def test_standard_tests_for_my_stream(test_util):
+    def test_standard_tests_for_my_stream(tap_test_util):
         test_util._test_stream_returns_at_least_one_record("my_stream")
         test_util._test_stream_catalog_attributes_in_records("my_stream")
         test_util._test_primary_keys("my_stream")
@@ -59,11 +59,18 @@ class TapTestUtility(object):
             parse_env_config (bool, optional): Whether to use env variables when initializing the tap. Defaults to True.
         """
         self.config = config
-        self.tap = tap_class(
-            config=config, state=None, parse_env_config=parse_env_config
-        )
+        self.tap_class = tap_class
+        self.parse_env_config = parse_env_config
+        self.tap = self.create_new_tap()
         self.stream_record_limit = stream_record_limit
 
+    def create_new_tap(self, **kwargs):
+        tap = self.tap_class(
+            config=self.config,
+            parse_env_config=self.parse_env_config,
+            **kwargs
+        )
+        return tap
 
     def run_sync(self):
         stdout = self._exec_sync()
@@ -128,46 +135,39 @@ class TapTestUtility(object):
     @property
     def available_tests(self):
         return {
-            "tap": {
-                "cli": self._test_tap_cli_prints,
-                "discovery": self._test_tap_discovery,
-                "stream_connections": self._test_tap_stream_connections,
-            },
-            "stream": {
-                "returns_record": self._test_stream_returns_at_least_one_record,
-                "catalog_schema_matches_record": self._test_stream_catalog_schema_matches_records,
-                "record_schema_matches_catalog": self._test_stream_record_schema_matches_catalog,
-                "primary_key": self._test_stream_primary_key,
-            },
-            "attribute": {
-                "not_null": self._test_stream_attribute_is_not_null,
-                "unique": self._test_stream_attribute_is_unique,
-                "accepted_values": self._test_stream_attribute_contains_accepted_values,
-                "valid_timestamp": self._test_stream_attribute_is_valid_timestamp,
-            },
+            "tap__cli": self._test_tap_cli_prints,
+            "tap__discovery": self._test_tap_discovery,
+            "tap__stream_connections": self._test_tap_stream_connections,
+            "stream__returns_record": self._test_stream_returns_at_least_one_record,
+            "stream__catalog_schema_matches_record": self._test_stream_catalog_schema_matches_records,
+            "stream__record_schema_matches_catalog": self._test_stream_record_schema_matches_catalog,
+            "stream__primary_key": self._test_stream_primary_key,
+            "attribute__not_null": self._test_stream_attribute_is_not_null,
+            "attribute__unique": self._test_stream_attribute_is_unique,
+            "attribute__accepted_values": self._test_stream_attribute_contains_accepted_values,
+            "attribute__valid_timestamp": self._test_stream_attribute_is_valid_timestamp,
         }
 
     def _test_tap_cli_prints(self) -> None:
         # Test CLI prints
-        self.tap.print_version()
-        self.tap.print_about()
-        self.tap.print_about(format="json")
+        tap = self.create_new_tap()
+        tap.print_version()
+        tap.print_about()
+        tap.print_about(format="json")
 
     def _test_tap_discovery(self) -> None:
         # Test discovery
-        tap1 = deepcopy(self.tap)
+        tap1 = self.create_new_tap()
         tap1.run_discovery()
         catalog = tap1.catalog_dict
         # Reset and re-initialize with an input catalog
-        tap1 = None  # type: ignore
-        tap2: Tap = tap1.__class__(
-            config=self.config, parse_env_config=True, catalog=catalog
-        )
+        tap2: Tap = self.create_new_tap(catalog=catalog)
         assert tap2
 
     def _test_tap_stream_connections(self) -> None:
         # Initialize with basic config
-        self.tap.run_connection_test()
+        tap = self.create_new_tap()
+        tap.run_connection_test()
 
     def _test_stream_returns_at_least_one_record(self, stream_name):
         "The full sync of the stream should have returned at least 1 record."

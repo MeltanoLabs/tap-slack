@@ -14,46 +14,39 @@ SAMPLE_CONFIG = {
 }
 
 TEST_MANIFEST = [
-    ("tap", "cli", {}),
-    ("tap", "discovery", {}),
-    ("tap", "stream_connections", {}),
-    ("stream", "catalog_schema_matches_record", {"stream_name": "channels"}),
-    ("stream", "record_schema_matches_catalog", {"stream_name": "channels"}),
-    ("stream", "returns_record", {"stream_name": "channels"}),
-    ("stream", "primary_key", {"stream_name": "channels"}),
-    ("stream", "catalog_schema_matches_record", {"stream_name": "channel_members"}),
-    ("stream", "record_schema_matches_catalog", {"stream_name": "channel_members"}),
-    ("stream", "returns_record", {"stream_name": "channel_members"}),
-    ("stream", "primary_key", {"stream_name": "channel_members"}),
-    ("stream", "catalog_schema_matches_record", {"stream_name": "messages"}),
-    ("stream", "record_schema_matches_catalog", {"stream_name": "messages"}),
-    ("stream", "returns_record", {"stream_name": "messages"}),
-    ("stream", "primary_key", {"stream_name": "messages"}),
-    ("stream", "catalog_schema_matches_record", {"stream_name": "threads"}),
-    ("stream", "record_schema_matches_catalog", {"stream_name": "threads"}),
-    ("stream", "returns_record", {"stream_name": "threads"}),
-    ("stream", "primary_key", {"stream_name": "threads"}),
-    ("stream", "catalog_schema_matches_record", {"stream_name": "users"}),
-    ("stream", "record_schema_matches_catalog", {"stream_name": "users"}),
-    ("stream", "returns_record", {"stream_name": "users"}),
-    ("stream", "primary_key", {"stream_name": "users"}),
-    ("attribute", "unique", {"stream_name": "channels", "attribute_name": "id"}),
-    ("attribute", "not_null", {"stream_name": "channels", "attribute_name": "id"}),
+    ("tap__cli", {}),
+    ("tap__discovery", {}),
+    ("tap__stream_connections", {}),
+    ("stream__catalog_schema_matches_record", {"stream_name": "channels"}),
+    ("stream__record_schema_matches_catalog", {"stream_name": "channels"}),
+    ("stream__returns_record", {"stream_name": "channels"}),
+    ("stream__primary_key", {"stream_name": "channels"}),
+    ("stream__catalog_schema_matches_record", {"stream_name": "channel_members"}),
+    ("stream__record_schema_matches_catalog", {"stream_name": "channel_members"}),
+    ("stream__returns_record", {"stream_name": "channel_members"}),
+    ("stream__primary_key", {"stream_name": "channel_members"}),
+    ("stream__record_schema_matches_catalog", {"stream_name": "messages"}),
+    ("stream__returns_record", {"stream_name": "messages"}),
+    ("stream__primary_key", {"stream_name": "messages"}),
+    ("stream__record_schema_matches_catalog", {"stream_name": "threads"}),
+    ("stream__returns_record", {"stream_name": "threads"}),
+    ("stream__primary_key", {"stream_name": "threads"}),
+    ("stream__catalog_schema_matches_record", {"stream_name": "users"}),
+    ("stream__record_schema_matches_catalog", {"stream_name": "users"}),
+    ("stream__returns_record", {"stream_name": "users"}),
+    ("stream__primary_key", {"stream_name": "users"}),
+    ("attribute__unique", {"stream_name": "channels", "attribute_name": "id"}),
+    ("attribute__not_null", {"stream_name": "channels", "attribute_name": "id"}),
 ]
 
 def generate_id_from_test_config(c):
-    level, test, params = c
+    test, params = c
     id_components = [
         params.get("stream_name"),
         params.get("attribute_name"),
-        level,
         test
     ]
     return "__".join(c for c in id_components if c)
-
-@pytest.fixture(scope="session")
-def tap_slack():
-    yield TapSlack(config=SAMPLE_CONFIG)
 
 
 @pytest.fixture(scope="session")
@@ -70,6 +63,6 @@ def test_util():
     ids=map(generate_id_from_test_config, TEST_MANIFEST)
 )
 def test_builtin_tap_tests(test_util, test_config):
-    level, name, params = test_config
-    test_func = test_util.available_tests[level][name]
+    test_name, params = test_config
+    test_func = test_util.available_tests[test_name]
     test_func(**params)
