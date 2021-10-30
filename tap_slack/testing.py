@@ -66,9 +66,7 @@ class TapTestUtility(object):
 
     def create_new_tap(self, **kwargs):
         tap = self.tap_class(
-            config=self.config,
-            parse_env_config=self.parse_env_config,
-            **kwargs
+            config=self.config, parse_env_config=self.parse_env_config, **kwargs
         )
         return tap
 

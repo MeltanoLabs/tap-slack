@@ -39,28 +39,23 @@ TEST_MANIFEST = [
     ("attribute__not_null", {"stream_name": "channels", "attribute_name": "id"}),
 ]
 
+
 def generate_id_from_test_config(c):
     test, params = c
-    id_components = [
-        params.get("stream_name"),
-        params.get("attribute_name"),
-        test
-    ]
+    id_components = [params.get("stream_name"), params.get("attribute_name"), test]
     return "__".join(c for c in id_components if c)
 
 
 @pytest.fixture(scope="session")
 def test_util():
-    test_util = TapTestUtility(TapSlack, SAMPLE_CONFIG)
+    test_util = TapTestUtility(TapSlack, SAMPLE_CONFIG, stream_record_limit=500)
     test_util.run_sync()
 
     yield test_util
 
 
 @pytest.mark.parametrize(
-    "test_config",
-    TEST_MANIFEST,
-    ids=map(generate_id_from_test_config, TEST_MANIFEST)
+    "test_config", TEST_MANIFEST, ids=map(generate_id_from_test_config, TEST_MANIFEST)
 )
 def test_builtin_tap_tests(test_util, test_config):
     test_name, params = test_config
