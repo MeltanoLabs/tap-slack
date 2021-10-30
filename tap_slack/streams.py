@@ -38,13 +38,13 @@ class ChannelsStream(SlackStream):
         url = f"{self.url_base}/conversations.join"
         params = {"channel": channel_id}
         response = self.requests_session.post(
-            url=url,
-            params=params,
-            headers=self.authenticator.auth_headers
+            url=url, params=params, headers=self.authenticator.auth_headers
         )
         if not response.json().get("ok"):
-            self.logger.warning("Error joining channel %s: %s", response.json().get("error"))
-        self.logger.info("Successfully joined channel: %s", channel_id)  
+            self.logger.warning(
+                "Error joining channel %s: %s", response.json().get("error")
+            )
+        self.logger.info("Successfully joined channel: %s", channel_id)
 
 
 class ChannelMembersStream(SlackStream):
@@ -119,8 +119,7 @@ class MessagesStream(SlackStream):
         if not messages_stream_starting_timestamp:
             return None
         elif (
-            self.threads_stream_starting_timestamp
-            < messages_stream_starting_timestamp
+            self.threads_stream_starting_timestamp < messages_stream_starting_timestamp
         ):
             return self.threads_stream_starting_timestamp
         else:

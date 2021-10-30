@@ -4,9 +4,10 @@ import json
 import sys
 import io
 
+from copy import deepcopy
 from collections import defaultdict
 from dateutil import parser
-from typing import List, Type, Any
+from typing import List, Type, Any, Tuple
 
 from singer_sdk.tap_base import Tap
 from singer_sdk.exceptions import MaxRecordsLimitException
@@ -42,7 +43,11 @@ class StreamTestUtility(object):
     records = defaultdict(list)
 
     def __init__(
-        self, tap_class: Type[Tap], config: dict = {}, stream_record_limit: int = 10, parse_env_config: bool = True
+        self,
+        tap_class: Type[Tap],
+        config: dict = {},
+        stream_record_limit: int = 10,
+        parse_env_config: bool = True,
     ) -> None:
         """
         Initializes the test utility.
@@ -53,7 +58,10 @@ class StreamTestUtility(object):
             stream_record_limit (int, optional): The max number of records a stream may emit before being stopped. Defaults to 10.
             parse_env_config (bool, optional): Whether to use env variables when initializing the tap. Defaults to True.
         """
-        self.tap = tap_class(config=config, state=None, parse_env_config=parse_env_config)
+        self.config = config
+        self.tap = tap_class(
+            config=config, state=None, parse_env_config=parse_env_config
+        )
         self.stream_record_limit = stream_record_limit
 
     @property
@@ -62,7 +70,7 @@ class StreamTestUtility(object):
             self._test_stream_returns_at_least_one_record,
             self._test_stream_catalog_schema_matches_records,
             self._test_stream_record_schema_matches_catalog,
-            self._test_stream_primary_key
+            self._test_stream_primary_key,
         ]
 
     @property
@@ -71,7 +79,7 @@ class StreamTestUtility(object):
             self._test_stream_attribute_is_not_null,
             self._test_stream_attribute_is_unique,
             self._test_stream_attribute_contains_accepted_values,
-            self._test_stream_attribute_is_valid_timestamp
+            self._test_stream_attribute_is_valid_timestamp,
         ]
 
     def run_sync(self):
@@ -89,7 +97,7 @@ class StreamTestUtility(object):
 
     def _sync_all_streams(self) -> bool:
         """
-        Rewrites the 
+        Rewrites the
         """
         self.tap._reset_state_progress_markers()
         self.tap._set_compatible_replication_methods()
@@ -134,6 +142,50 @@ class StreamTestUtility(object):
                 continue
         return
 
+    @property
+    def available_tests(self):
+        return {
+            "tap": {
+                "cli": self._test_tap_cli_prints,
+                "discovery": self._test_tap_discovery,
+                "stream_connections": self._test_tap_stream_connections,
+            },
+            "stream": {
+                "returns_record": self._test_stream_returns_at_least_one_record,
+                "catalog_schema_matches_record": self._test_stream_catalog_schema_matches_records,
+                "record_schema_matches_catalog": self._test_stream_record_schema_matches_catalog,
+                "primary_key": self._test_stream_primary_key,
+            },
+            "attribute": {
+                "not_null": self._test_stream_attribute_is_not_null,
+                "unique": self._test_stream_attribute_is_unique,
+                "accepted_values": self._test_stream_attribute_contains_accepted_values,
+                "valid_timestamp": self._test_stream_attribute_is_valid_timestamp,
+            },
+        }
+
+    def _test_tap_cli_prints(self) -> None:
+        # Test CLI prints
+        self.tap.print_version()
+        self.tap.print_about()
+        self.tap.print_about(format="json")
+
+    def _test_tap_discovery(self) -> None:
+        # Test discovery
+        tap1 = deepcopy(self.tap)
+        tap1.run_discovery()
+        catalog = tap1.catalog_dict
+        # Reset and re-initialize with an input catalog
+        tap1 = None  # type: ignore
+        tap2: Tap = tap1.__class__(
+            config=self.config, parse_env_config=True, catalog=catalog
+        )
+        assert tap2
+
+    def _test_tap_stream_connections(self) -> None:
+        # Initialize with basic config
+        self.tap.run_connection_test()
+
     def _test_stream_returns_at_least_one_record(self, stream_name):
         "The full sync of the stream should have returned at least 1 record."
         record_count = len(self.records[stream_name])
@@ -147,7 +199,7 @@ class StreamTestUtility(object):
         stream_record_keys = set().union(
             *(d["record"].keys() for d in self.records[stream_name])
         )
-        diff =  stream_catalog_keys - stream_record_keys
+        diff = stream_catalog_keys - stream_record_keys
 
         assert diff == set(), f"Fields in catalog but not in record: ({diff})"
 
@@ -174,7 +226,9 @@ class StreamTestUtility(object):
         assert len(set(record_ids)) == len(records)
         assert all(all(k is not None for k in pk) for pk in record_ids)
 
-    def _test_stream_attribute_contains_accepted_values(self, stream_name: str, attribute_name: str, accepted_values: List[Any]):
+    def _test_stream_attribute_contains_accepted_values(
+        self, stream_name: str, attribute_name: str, accepted_values: List[Any]
+    ):
         "Test that a given attribute contains only accepted values."
         records = [r["record"] for r in self.records[stream_name]]
 
@@ -187,7 +241,9 @@ class StreamTestUtility(object):
 
         assert len(set(values)) == len(values)
 
-    def _test_stream_attribute_is_valid_timestamp(self, stream_name: str, attribute_name: str):
+    def _test_stream_attribute_is_valid_timestamp(
+        self, stream_name: str, attribute_name: str
+    ):
         "Test that a given attribute contains unique values, ignoring nulls."
         records = [r["record"] for r in self.records[stream_name]]
         values = [r[attribute_name] for r in records if r[attribute_name] is not None]
