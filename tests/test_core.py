@@ -5,8 +5,7 @@ import os
 import pytest
 
 from tap_slack.tap import TapSlack
-from tap_slack.testing import StreamTestUtility
-
+from tap_slack.testing import TapTestUtility
 
 
 SAMPLE_CONFIG = {
@@ -42,6 +41,16 @@ TEST_MANIFEST = [
     ("attribute", "not_null", {"stream_name": "channels", "attribute_name": "id"}),
 ]
 
+def generate_id_from_test_config(c):
+    level, test, params = c
+    id_components = [
+        params.get("stream_name"),
+        params.get("attribute_name"),
+        level,
+        test
+    ]
+    return "__".join(c for c in id_components if c)
+
 @pytest.fixture(scope="session")
 def tap_slack():
     yield TapSlack(config=SAMPLE_CONFIG)
@@ -49,13 +58,17 @@ def tap_slack():
 
 @pytest.fixture(scope="session")
 def test_util():
-    test_util = StreamTestUtility(TapSlack, SAMPLE_CONFIG)
+    test_util = TapTestUtility(TapSlack, SAMPLE_CONFIG)
     test_util.run_sync()
 
     yield test_util
 
 
-@pytest.mark.parametrize("test_config", TEST_MANIFEST)
+@pytest.mark.parametrize(
+    "test_config",
+    TEST_MANIFEST,
+    ids=map(generate_id_from_test_config, TEST_MANIFEST)
+)
 def test_builtin_tap_tests(test_util, test_config):
     level, name, params = test_config
     test_func = test_util.available_tests[level][name]

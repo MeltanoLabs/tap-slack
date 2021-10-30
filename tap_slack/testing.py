@@ -13,7 +13,7 @@ from singer_sdk.tap_base import Tap
 from singer_sdk.exceptions import MaxRecordsLimitException
 
 
-class StreamTestUtility(object):
+class TapTestUtility(object):
     """
     This utility class enables developers to more easily test taps against
     live integrations. It provides some out-of-the-box tests that can be run
@@ -64,23 +64,6 @@ class StreamTestUtility(object):
         )
         self.stream_record_limit = stream_record_limit
 
-    @property
-    def available_stream_tests(self):
-        return [
-            self._test_stream_returns_at_least_one_record,
-            self._test_stream_catalog_schema_matches_records,
-            self._test_stream_record_schema_matches_catalog,
-            self._test_stream_primary_key,
-        ]
-
-    @property
-    def available_stream_attribute_tests(self):
-        return [
-            self._test_stream_attribute_is_not_null,
-            self._test_stream_attribute_is_unique,
-            self._test_stream_attribute_contains_accepted_values,
-            self._test_stream_attribute_is_valid_timestamp,
-        ]
 
     def run_sync(self):
         stdout = self._exec_sync()
