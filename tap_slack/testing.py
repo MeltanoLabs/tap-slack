@@ -144,6 +144,9 @@ class TapTestUtility(object):
             "attribute__unique": self._test_stream_attribute_is_unique,
             "attribute__accepted_values": self._test_stream_attribute_contains_accepted_values,
             "attribute__valid_timestamp": self._test_stream_attribute_is_valid_timestamp,
+            "attribute__is_object": self._test_stream_attribute_is_object,
+            "attribute__is_integer": self._test_stream_attribute_is_integer,
+            "attribute__is_boolean": self._test_stream_attribute_is_boolean,
         }
 
     def generate_built_in_tests(self):
@@ -179,6 +182,12 @@ class TapTestUtility(object):
                     manifest.append(("attribute__valid_timestamp", params))
                 if not "null" in v.get("type", []):
                     manifest.append(("attribute__not_null", params))
+                if "boolean" in v.get("type", []):
+                    manifest.append(("attribute__is_boolean", params))
+                if "integer" in v.get("type", []):
+                    manifest.append(("attribute__is_integer", params))
+                if "object" in v.get("type", []):
+                    manifest.append(("attribute__is_object", params))
         return manifest
 
     def _generate_test_ids(self, test_manifest):
@@ -256,12 +265,12 @@ class TapTestUtility(object):
         "Test that a given attribute contains only accepted values."
         records = [r["record"] for r in self.records[stream_name]]
 
-        assert all(r[attribute_name] in accepted_values for r in records)
+        assert all(r.get(attribute_name) in accepted_values for r in records)
 
     def _test_stream_attribute_is_unique(self, stream_name: str, attribute_name: str):
         "Test that a given attribute contains unique values, ignoring nulls."
         records = [r["record"] for r in self.records[stream_name]]
-        values = [r[attribute_name] for r in records if r[attribute_name] is not None]
+        values = [r.get(attribute_name) for r in records if r.get(attribute_name) is not None]
 
         assert len(set(values)) == len(values)
 
@@ -270,7 +279,7 @@ class TapTestUtility(object):
     ):
         "Test that a given attribute contains unique values, ignoring nulls."
         records = [r["record"] for r in self.records[stream_name]]
-        values = [r[attribute_name] for r in records if r[attribute_name] is not None]
+        values = [r.get(attribute_name) for r in records if r.get(attribute_name) is not None]
 
         assert all(parser.parse(v) for v in values)
 
@@ -278,4 +287,22 @@ class TapTestUtility(object):
         "Test that a given attribute does not contain any null values."
         records = [r["record"] for r in self.records[stream_name]]
 
-        assert all(r[attribute_name] is not None for r in records)
+        assert all(r.get(attribute_name) is not None for r in records)
+
+    def _test_stream_attribute_is_boolean(self, stream_name: str, attribute_name: str):
+        "Test that a given attribute does not contain any null values."
+        records = [r["record"] for r in self.records[stream_name]]
+        
+        assert all(type(r.get(attribute_name)) == bool for r in records if r.get(attribute_name))
+
+    def _test_stream_attribute_is_object(self, stream_name: str, attribute_name: str):
+        "Test that a given attribute does not contain any null values."
+        records = [r["record"] for r in self.records[stream_name]]
+
+        assert all(type(r.get(attribute_name)) == dict for r in records if r.get(attribute_name))
+
+    def _test_stream_attribute_is_integer(self, stream_name: str, attribute_name: str):
+        "Test that a given attribute does not contain any null values."
+        records = [r["record"] for r in self.records[stream_name]]
+
+        assert all(type(r.get(attribute_name)) == int for r in records if r.get(attribute_name))

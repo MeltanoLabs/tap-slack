@@ -12,17 +12,16 @@ SAMPLE_CONFIG = {
     "start_date": "2021-09-25T00:00:00Z",
 }
 
-SAMPLE_TAP = TapTestUtility(TapSlack, SAMPLE_CONFIG)
-SAMPLE_TAP.tap.run_discovery()
-pytest_params = SAMPLE_TAP.generate_built_in_tests()
+test_utility = TapTestUtility(TapSlack, SAMPLE_CONFIG, stream_record_limit=500)
+test_utility.tap.run_discovery()
+test_utility.run_sync()
+
+pytest_params = test_utility.generate_built_in_tests()
 
 
 @pytest.fixture(scope="session")
 def test_util():
-    test_util = TapTestUtility(TapSlack, SAMPLE_CONFIG, stream_record_limit=500)
-    test_util.run_sync()
-
-    yield test_util
+    yield test_utility
 
 
 @pytest.mark.parametrize("test_config", **pytest_params)
