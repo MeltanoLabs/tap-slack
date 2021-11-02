@@ -146,6 +146,49 @@ class TapTestUtility(object):
             "attribute__valid_timestamp": self._test_stream_attribute_is_valid_timestamp,
         }
 
+    def generate_built_in_tests(self):
+        tap_tests = self._generate_tap_tests()
+        schema_tests = self._generate_schema_tests()
+        attribute_tests = self._generate_attribute_tests()
+        test_manifest = tap_tests + schema_tests + attribute_tests
+        test_ids = self._generate_test_ids(test_manifest)
+        return {"argvalues": test_manifest, "ids": test_ids}
+
+    def _generate_tap_tests(self):
+        manifest = []
+        for test_name in self.tap.expectations:
+            manifest.append((test_name, {}))
+        return manifest
+
+    def _generate_schema_tests(self):
+        manifest = []
+        for stream in self.tap.streams.values():
+            for test_name in stream.expectations:
+                manifest.append((test_name, {"stream_name": stream.name}))
+        return manifest
+
+    def _generate_attribute_tests(self):
+        manifest = []
+        for stream in self.tap.streams.values():
+            schema = stream.schema
+            for k, v in schema["properties"].items():
+                params = {"stream_name": stream.name, "attribute_name": k}
+                if v.get("required"):
+                    manifest.append(("attribute__unique", params))
+                if v.get("format") == 'date-time':
+                    manifest.append(("attribute__valid_timestamp", params))
+                if not "null" in v.get("type", []):
+                    manifest.append(("attribute__not_null", params))
+        return manifest
+
+    def _generate_test_ids(self, test_manifest):
+        id_list = []
+        for test, params in test_manifest:
+            id_components = [params.get("stream_name"), params.get("attribute_name"), test]
+            id_list.append("__".join(c for c in id_components if c))
+        return id_list
+
+
     def _test_tap_cli_prints(self) -> None:
         # Test CLI prints
         tap = self.create_new_tap()

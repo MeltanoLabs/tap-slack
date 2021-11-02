@@ -16,7 +16,7 @@ schema = th.PropertiesList(
     th.Property("is_restricted", th.BooleanType),
     th.Property("is_ultra_restricted", th.BooleanType),
     th.Property("is_bot", th.BooleanType),
-    th.Property("updated", th.StringType),
+    th.Property("updated", th.DateTimeType),
     th.Property("is_app_user", th.BooleanType),
     th.Property("is_email_confirmed", th.BooleanType),
     th.Property("who_can_share_contact_card", th.StringType),

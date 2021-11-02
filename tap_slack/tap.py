@@ -63,3 +63,11 @@ class TapSlack(Tap):
     def discover_streams(self) -> List[Stream]:
         """Return a list of discovered streams."""
         return [stream_class(tap=self) for stream_class in STREAM_TYPES]
+
+    @property
+    def expectations(self):
+        return [
+            "tap__cli",
+            "tap__discovery",
+            "tap__stream_connections",
+        ]

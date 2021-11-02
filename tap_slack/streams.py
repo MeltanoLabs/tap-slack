@@ -79,6 +79,7 @@ class MessagesStream(SlackStream):
 
     ignore_parent_replication_key = True
     max_requests_per_minute = 50
+    is_timestamp_replication_key = True
 
     @property
     def threads_stream_starting_timestamp(self):
