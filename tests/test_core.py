@@ -1,13 +1,31 @@
 """Tests standard tap features using the built-in SDK tests library."""
 
-from singer_sdk.testing import get_standard_tap_tests
+import pytest
+import os
+
 from tap_slack.tap import TapSlack
-from typing import Text, List, Dict
+from tap_slack.testing import TapTestUtility
 
 
-# Run standard built-in tap tests from the SDK:
-def test_standard_tap_tests(sample_config):
-    """Run standard tap tests from the SDK."""
-    tests = get_standard_tap_tests(TapSlack, config=sample_config)
-    for test in tests:
-        test()
+SAMPLE_CONFIG = {
+    "api_key": os.environ.get("TAP_SLACK_API_KEY"),
+    "start_date": "2021-09-25T00:00:00Z",
+}
+
+test_utility = TapTestUtility(TapSlack, SAMPLE_CONFIG, stream_record_limit=500)
+test_utility.tap.run_discovery()
+test_utility.run_sync()
+
+pytest_params = test_utility.generate_built_in_tests()
+
+
+@pytest.fixture(scope="session")
+def test_util():
+    yield test_utility
+
+
+@pytest.mark.parametrize("test_config", **pytest_params)
+def test_builtin_tap_tests(test_util, test_config):
+    test_name, params = test_config
+    test_func = test_util.available_tests[test_name]
+    test_func(**params)

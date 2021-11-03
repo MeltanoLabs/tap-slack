@@ -1,7 +1,7 @@
 """REST client handling, including SlackStream base class."""
 
 import time
-from typing import Any, Dict, Text, Optional
+from typing import Any, Dict, Text, Optional, List
 
 from singer_sdk.streams import RESTStream
 from singer_sdk.authenticators import BearerTokenAuthenticator
@@ -23,6 +23,14 @@ class SlackStream(RESTStream):
             self,
             token=self.config.get("api_key"),
         )
+
+    @property
+    def expectations(self) -> List[str]:
+        return [
+            "stream__returns_record",
+            "stream__record_schema_matches_catalog",
+            "stream__primary_key",
+        ]
 
     def get_url_params(
         self, context: Optional[dict], next_page_token: Optional[Any]
