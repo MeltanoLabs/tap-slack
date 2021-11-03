@@ -3,6 +3,7 @@
 import json
 import sys
 import io
+import warnings
 
 from copy import deepcopy
 from collections import defaultdict
@@ -276,6 +277,9 @@ class TapTestUtility(object):
         values = [
             r.get(attribute_name) for r in records if r.get(attribute_name) is not None
         ]
+        if not values:
+            warnings.warn(UserWarning("No records were available to test."))
+            return
 
         assert len(set(values)) == len(values)
 
@@ -298,28 +302,32 @@ class TapTestUtility(object):
 
     def _test_stream_attribute_is_boolean(self, stream_name: str, attribute_name: str):
         "Test that a given attribute does not contain any null values."
-        records = [r["record"] for r in self.records[stream_name]]
-
-        assert all(
-            type(r.get(attribute_name)) == bool
-            for r in records
-            if r.get(attribute_name)
-        )
+        for record in self.records[stream_name]:
+            r = record["record"]
+            if r.get(attribute_name) is not None:
+                assert type(bool(r[attribute_name])) == bool, \
+                    f"Unable to cast value ('{r[attribute_name]}') to boolean type."
 
     def _test_stream_attribute_is_object(self, stream_name: str, attribute_name: str):
         "Test that a given attribute does not contain any null values."
-        records = [r["record"] for r in self.records[stream_name]]
-
-        assert all(
-            type(r.get(attribute_name)) == dict
-            for r in records
-            if r.get(attribute_name)
-        )
+        for record in self.records[stream_name]:
+            r = record["record"]
+            if r.get(attribute_name) is not None:
+                assert dict(r[attribute_name]), \
+                    f"Unable to cast value ('{r[attribute_name]}') to dict type."
 
     def _test_stream_attribute_is_integer(self, stream_name: str, attribute_name: str):
-        "Test that a given attribute does not contain any null values."
-        records = [r["record"] for r in self.records[stream_name]]
+        "Test that a given attribute can be converted to an integer type."
+        for record in self.records[stream_name]:
+            r = record["record"]
+            if r.get(attribute_name) is not None:
+                assert int(r[attribute_name]), \
+                    f"Unable to cast value ('{r[attribute_name]}') to int type."
 
-        assert all(
-            type(r.get(attribute_name)) == int for r in records if r.get(attribute_name)
-        )
+    def _test_stream_attribute_is_number(self, stream_name: str, attribute_name: str):
+        "Test that a given attribute can be converted to a floating point number type."
+        for record in self.records[stream_name]:
+            r = record["record"]
+            if r.get(attribute_name) is not None:
+                assert float(r.get(attribute_name)), \
+                    f"Unable to cast value ('{r[attribute_name]}') to float type."
