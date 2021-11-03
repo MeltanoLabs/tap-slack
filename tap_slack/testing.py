@@ -178,7 +178,7 @@ class TapTestUtility(object):
                 params = {"stream_name": stream.name, "attribute_name": k}
                 if v.get("required"):
                     manifest.append(("attribute__unique", params))
-                if v.get("format") == 'date-time':
+                if v.get("format") == "date-time":
                     manifest.append(("attribute__valid_timestamp", params))
                 if not "null" in v.get("type", []):
                     manifest.append(("attribute__not_null", params))
@@ -193,10 +193,13 @@ class TapTestUtility(object):
     def _generate_test_ids(self, test_manifest):
         id_list = []
         for test, params in test_manifest:
-            id_components = [params.get("stream_name"), params.get("attribute_name"), test]
+            id_components = [
+                params.get("stream_name"),
+                params.get("attribute_name"),
+                test,
+            ]
             id_list.append("__".join(c for c in id_components if c))
         return id_list
-
 
     def _test_tap_cli_prints(self) -> None:
         # Test CLI prints
@@ -270,7 +273,9 @@ class TapTestUtility(object):
     def _test_stream_attribute_is_unique(self, stream_name: str, attribute_name: str):
         "Test that a given attribute contains unique values, ignoring nulls."
         records = [r["record"] for r in self.records[stream_name]]
-        values = [r.get(attribute_name) for r in records if r.get(attribute_name) is not None]
+        values = [
+            r.get(attribute_name) for r in records if r.get(attribute_name) is not None
+        ]
 
         assert len(set(values)) == len(values)
 
@@ -279,7 +284,9 @@ class TapTestUtility(object):
     ):
         "Test that a given attribute contains unique values, ignoring nulls."
         records = [r["record"] for r in self.records[stream_name]]
-        values = [r.get(attribute_name) for r in records if r.get(attribute_name) is not None]
+        values = [
+            r.get(attribute_name) for r in records if r.get(attribute_name) is not None
+        ]
 
         assert all(parser.parse(v) for v in values)
 
@@ -292,17 +299,27 @@ class TapTestUtility(object):
     def _test_stream_attribute_is_boolean(self, stream_name: str, attribute_name: str):
         "Test that a given attribute does not contain any null values."
         records = [r["record"] for r in self.records[stream_name]]
-        
-        assert all(type(r.get(attribute_name)) == bool for r in records if r.get(attribute_name))
+
+        assert all(
+            type(r.get(attribute_name)) == bool
+            for r in records
+            if r.get(attribute_name)
+        )
 
     def _test_stream_attribute_is_object(self, stream_name: str, attribute_name: str):
         "Test that a given attribute does not contain any null values."
         records = [r["record"] for r in self.records[stream_name]]
 
-        assert all(type(r.get(attribute_name)) == dict for r in records if r.get(attribute_name))
+        assert all(
+            type(r.get(attribute_name)) == dict
+            for r in records
+            if r.get(attribute_name)
+        )
 
     def _test_stream_attribute_is_integer(self, stream_name: str, attribute_name: str):
         "Test that a given attribute does not contain any null values."
         records = [r["record"] for r in self.records[stream_name]]
 
-        assert all(type(r.get(attribute_name)) == int for r in records if r.get(attribute_name))
+        assert all(
+            type(r.get(attribute_name)) == int for r in records if r.get(attribute_name)
+        )
