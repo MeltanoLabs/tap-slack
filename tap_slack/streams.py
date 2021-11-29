@@ -1,6 +1,7 @@
 """Stream type classes for tap-slack."""
 import requests
 import pendulum
+import time
 
 from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, Optional, Iterable, cast
@@ -100,12 +101,13 @@ class MessagesStream(SlackStream):
         Directly invoke the threads stream sync on relevant messages,
         and filter out messages that have already been synced before.
         """
-        if row.get("thread_ts") and self._tap.streams["threads"].selected:
+        threads_stream = self._tap.streams["threads"]
+        replication_key_ts = self.get_starting_replication_key_value(context)
+        if row.get("thread_ts") and threads_stream.selected:
             threads_context = {**context, **{"thread_ts": row["ts"]}}
-            self._tap.streams["threads"].sync(context=threads_context)
-        if row["ts"] and float(row["ts"]) < self.get_starting_replication_key_value(
-            context
-        ):
+            threads_stream.sync(context=threads_context)
+            time.sleep(60.0 / threads_stream.max_requests_per_minute)
+        if row["ts"] and float(row["ts"]) < replication_key_ts:
             return None
         return row
 

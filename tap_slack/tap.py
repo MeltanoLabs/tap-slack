@@ -55,7 +55,7 @@ class TapSlack(Tap):
         th.Property(
             "auto_join_channels",
             th.BooleanType,
-            default=True,
+            default=False,
             description="Whether the bot user should attempt to join channels that it has not yet joined. The bot user must be a member of the channel to retrieve messages.",
         ),
     ).to_dict()

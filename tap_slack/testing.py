@@ -305,29 +305,33 @@ class TapTestUtility(object):
         for record in self.records[stream_name]:
             r = record["record"]
             if r.get(attribute_name) is not None:
-                assert type(bool(r[attribute_name])) == bool, \
-                    f"Unable to cast value ('{r[attribute_name]}') to boolean type."
+                assert (
+                    type(bool(r[attribute_name])) == bool
+                ), f"Unable to cast value ('{r[attribute_name]}') to boolean type."
 
     def _test_stream_attribute_is_object(self, stream_name: str, attribute_name: str):
         "Test that a given attribute does not contain any null values."
         for record in self.records[stream_name]:
             r = record["record"]
             if r.get(attribute_name) is not None:
-                assert dict(r[attribute_name]), \
-                    f"Unable to cast value ('{r[attribute_name]}') to dict type."
+                assert dict(
+                    r[attribute_name]
+                ), f"Unable to cast value ('{r[attribute_name]}') to dict type."
 
     def _test_stream_attribute_is_integer(self, stream_name: str, attribute_name: str):
         "Test that a given attribute can be converted to an integer type."
         for record in self.records[stream_name]:
             r = record["record"]
             if r.get(attribute_name) is not None:
-                assert int(r[attribute_name]), \
-                    f"Unable to cast value ('{r[attribute_name]}') to int type."
+                assert int(
+                    r[attribute_name]
+                ), f"Unable to cast value ('{r[attribute_name]}') to int type."
 
     def _test_stream_attribute_is_number(self, stream_name: str, attribute_name: str):
         "Test that a given attribute can be converted to a floating point number type."
         for record in self.records[stream_name]:
             r = record["record"]
             if r.get(attribute_name) is not None:
-                assert float(r.get(attribute_name)), \
-                    f"Unable to cast value ('{r[attribute_name]}') to float type."
+                assert float(
+                    r.get(attribute_name)
+                ), f"Unable to cast value ('{r[attribute_name]}') to float type."
