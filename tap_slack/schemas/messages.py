@@ -25,7 +25,7 @@ schema = th.PropertiesList(
             th.Property("id", th.StringType),
             th.Property("name", th.StringType),
             th.Property("team_id", th.StringType),
-            th.Property("updated", th.StringType),
+            th.Property("updated", th.IntegerType),
         ),
     ),
     th.Property("client_msg_id", th.StringType),
