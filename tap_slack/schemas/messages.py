@@ -4,7 +4,7 @@ schema = th.PropertiesList(
     th.Property("channel_id", th.StringType, required=True),
     th.Property(
         "ts",
-        th.NumberType,
+        th.StringType,
         required=True,
         description="Epoch timestamp of when the thread reply was posted.",
     ),
