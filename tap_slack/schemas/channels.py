@@ -6,7 +6,7 @@ schema = th.PropertiesList(
     th.Property("is_channel", th.BooleanType),
     th.Property("is_group", th.BooleanType),
     th.Property("is_im", th.BooleanType),
-    th.Property("created", th.StringType),
+    th.Property("created", th.IntegerType),
     th.Property("creator", th.StringType),
     th.Property("is_archived", th.BooleanType),
     th.Property("is_general", th.BooleanType),
