@@ -33,22 +33,22 @@ class ChannelsStream(SlackStream):
         "Join the channel if not a member, but emit no data."
         row = super().post_process(row, context)
         # return all in selected_channels or default to all, exclude any in excluded_channels list
-        channel_name = row["id"]
-        if self._is_included(channel_name) and not self._is_excluded(channel_name):
+        channel_id = row["id"]
+        if self._is_channel_inluded(channel_id) and not self._is_channel_excluded(channel_id):
             if not row["is_member"] and self.config.get("auto_join_channels", False):
-                self._join_channel(channel_name)
+                self._join_channel(channel_id)
             return row
 
-    def _is_excluded(self, channel_name: str) -> bool:
+    def _is_channel_excluded(self, channel_id: str) -> bool:
         excluded_channels = self.config.get("excluded_channels", [])
-        if channel_name in excluded_channels:
+        if channel_id in excluded_channels:
             return True
         else:
             return False
 
-    def _is_included(self, channel_name: str) -> bool:
+    def _is_channel_inluded(self, channel_id: str) -> bool:
         selected_channels = self.config.get("selected_channels")
-        if not selected_channels or channel_name in selected_channels:
+        if not selected_channels or channel_id in selected_channels:
             return True
         else:
             return False
