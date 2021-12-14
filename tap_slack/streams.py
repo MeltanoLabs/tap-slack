@@ -41,14 +41,12 @@ class ChannelsStream(SlackStream):
 
     def _is_channel_included(self, channel_id: str) -> bool:
         selected_channels = self.config.get("selected_channels")
-        if not selected_channels or channel_id in selected_channels:
-            excluded_channels = self.config.get("excluded_channels", [])
-            if channel_id in excluded_channels:
+        excluded_channels = self.config.get("excluded_channels", [])
+        if channel_id in excluded_channels:
                 return False
-            else:
-                return True
-        else:
-            return False
+        if selected_channels and channel_id not in selected_channels:
+                return False
+        return True
 
     def _join_channel(self, channel_id: str) -> requests.Response:
         url = f"{self.url_base}/conversations.join"
