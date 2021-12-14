@@ -58,6 +58,16 @@ class TapSlack(Tap):
             default=False,
             description="Whether the bot user should attempt to join channels that it has not yet joined. The bot user must be a member of the channel to retrieve messages.",
         ),
+        th.Property(
+            "selected_channels",
+            th.ArrayType(th.StringType),
+            description="A list of channel IDs that should be retrieved. If not defined then all are selected.",
+        ),
+        th.Property(
+            "excluded_channels",
+            th.ArrayType(th.StringType),
+            description="A list of channel IDs that should not be retrieved. Excluding overrides a selected setting, so if a channel is included in both selected and excluded, it will be excluded.",
+        ),
     ).to_dict()
 
     def discover_streams(self) -> List[Stream]:
@@ -71,3 +81,6 @@ class TapSlack(Tap):
             "tap__discovery",
             "tap__stream_connections",
         ]
+
+if __name__ == "__main__":
+    TapSlack.cli()
