@@ -34,16 +34,24 @@ class ChannelsStream(SlackStream):
         row = super().post_process(row, context)
         # only return selected channels and default to all
         channel_name = row["id"]
-        if self._do_sync_channel(channel_name):
+        if self._is_included(channel_name) and not self._is_excluded(channel_name):
             if not row["is_member"] and self.config.get("auto_join_channels", False):
                 self._join_channel(channel_name)
             return row
 
-    def _do_sync_channel(self, channel_name: str) -> bool:
-        selected_channels = self.config.get("channels")
+    def _is_excluded(self, channel_name: str) -> bool:
+        excluded_channels = self.config.get("excluded_channels")
+        if channel_name in excluded_channels:
+            return True
+        else:
+            return False
+
+    def _is_included(self, channel_name: str) -> bool:
+        selected_channels = self.config.get("selected_channels")
         if not selected_channels or channel_name in selected_channels:
             return True
-        return False
+        else:
+            return False
 
     def _join_channel(self, channel_id: str) -> requests.Response:
         url = f"{self.url_base}/conversations.join"
