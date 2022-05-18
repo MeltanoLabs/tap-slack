@@ -137,9 +137,9 @@ class MessagesStream(SlackStream):
         state = self.get_context_state(context)
         replication_key_value = state.get("replication_key_value")
         if replication_key_value:
-            if self.threads_stream_start < self.threads_stream_start:
+            if self.threads_stream_start < float(replication_key_value):
                 return self.threads_stream_start
-            return replication_key_value
+            return float(replication_key_value)
         elif "start_date" in self.config:
             start_date = cast(datetime, pendulum.parse(self.config["start_date"]))
             return start_date.replace(tzinfo=timezone.utc).timestamp()
