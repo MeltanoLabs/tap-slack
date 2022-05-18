@@ -323,15 +323,15 @@ class TapTestUtility(object):
         for record in self.records[stream_name]:
             r = record["record"]
             if r.get(attribute_name) is not None:
-                assert int(
-                    r[attribute_name]
-                ), f"Unable to cast value ('{r[attribute_name]}') to int type."
+                assert isinstance(
+                    int(r[attribute_name]), int
+                ), f"Unable to cast value ('{r[attribute_name]}') to int type for stream '{stream_name}'."
 
     def _test_stream_attribute_is_number(self, stream_name: str, attribute_name: str):
         "Test that a given attribute can be converted to a floating point number type."
         for record in self.records[stream_name]:
             r = record["record"]
             if r.get(attribute_name) is not None:
-                assert float(
-                    r.get(attribute_name)
+                assert isinstance(
+                    float(r.get(attribute_name)), float
                 ), f"Unable to cast value ('{r[attribute_name]}') to float type."
