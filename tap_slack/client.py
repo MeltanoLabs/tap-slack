@@ -1,10 +1,29 @@
 """REST client handling, including SlackStream base class."""
 
 import time
-from typing import Any, Dict, Text, Optional, List
+from typing import Any, Dict, List, Optional, Text
 
-from singer_sdk.streams import RESTStream
+from requests import Response
 from singer_sdk.authenticators import BearerTokenAuthenticator
+from singer_sdk.pagination import JSONPathPaginator
+from singer_sdk.streams import RESTStream
+
+
+class ThrottledJSONPathPaginator(JSONPathPaginator):
+    """A throttled paginator."""
+
+    def get_next(self, response: Response) -> str | None:
+        """Get the next page token.
+
+        Args:
+            response: API response object.
+
+        Returns:
+            The next page token.
+        """
+        if self.max_requests_per_minute:
+            time.sleep(60.0 / self.max_requests_per_minute)
+        return super().get_next(response)
 
 
 class SlackStream(RESTStream):
@@ -47,9 +66,6 @@ class SlackStream(RESTStream):
             params["ts"] = context["thread_ts"]
         return params
 
-    def get_next_page_token(self, response, previous_token):
+    def get_new_paginator(self):
         """Override default to apply rate throttling for streams."""
-        token = super().get_next_page_token(response, previous_token)
-        if self.max_requests_per_minute:
-            time.sleep(60.0 / self.max_requests_per_minute)
-        return token
+        return ThrottledJSONPathPaginator(self.next_page_token_jsonpath)
