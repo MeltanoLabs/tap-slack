@@ -14,6 +14,8 @@ from singer_sdk.streams import RESTStream
 class ThrottledJSONPathPaginator(JSONPathPaginator):
     """A throttled paginator."""
 
+    max_requests_per_minute = 200
+
     def get_next(self, response: Response) -> str | None:
         """Get the next page token.
 
@@ -33,7 +35,6 @@ class SlackStream(RESTStream):
 
     _page_size = 500
     url_base = "https://slack.com/api"
-    max_requests_per_minute = 200
     records_jsonpath = "$[*]"
     next_page_token_jsonpath = "$.response_metadata.next_cursor"
 
