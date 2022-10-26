@@ -7,7 +7,7 @@
 You can install this repository directly from the Github repo. For example, by running:
 
 ```bash
-pipx install https://github.com/MeltanoLabs/tap-slack.git
+pipx install git+https://github.com/MeltanoLabs/tap-slack.git
 ```
 
 ## Configuration
