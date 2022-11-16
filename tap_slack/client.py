@@ -1,10 +1,12 @@
 """REST client handling, including SlackStream base class."""
 
 import time
-from typing import Any, Dict, Text, Optional, List
+from typing import Any, Dict, List, Optional, Text
 
-from singer_sdk.streams import RESTStream
+import requests
 from singer_sdk.authenticators import BearerTokenAuthenticator
+from singer_sdk.exceptions import FatalAPIError
+from singer_sdk.streams import RESTStream
 
 
 class SlackStream(RESTStream):
@@ -53,3 +55,15 @@ class SlackStream(RESTStream):
         if self.max_requests_per_minute:
             time.sleep(60.0 / self.max_requests_per_minute)
         return token
+
+    def validate_response(self, response: requests.Response) -> None:
+        super().validate_response(response)
+        resp_data = response.json()
+        body_status = resp_data.get("ok")
+        if not body_status:
+            msg = (
+                f" {response.status_code} Client Error: "
+                f" {response.reason} for path: {self.path}"
+                f" Status {body_status}: {resp_data}"
+            )
+            raise FatalAPIError(msg)
