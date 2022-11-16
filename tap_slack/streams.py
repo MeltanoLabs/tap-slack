@@ -4,7 +4,7 @@ import pendulum
 import time
 
 from datetime import datetime, timezone, timedelta
-from typing import Any, Dict, Optional, Iterable, cast
+from typing import Optional, cast
 from singer_sdk.helpers.jsonpath import extract_jsonpath
 
 from tap_slack.client import SlackStream
@@ -179,3 +179,25 @@ class UsersStream(SlackStream):
     replication_key = None
     records_jsonpath = "members.[*]"
     schema = schemas.users
+
+
+class IntegrationLogsStream(SlackStream):
+    name = "integration_logs"
+    path = "/team.integrationLogs"
+    primary_keys = ["user_id", "app_id"]
+    replication_key = None
+    records_jsonpath = "team.[*]"
+    schema = schemas.integration_logs
+
+    def get_starting_replication_key_value(
+        self, context: Optional[dict]
+    ) -> Optional[float]:
+        state = self.get_context_state(context)
+        replication_key_value = state.get("replication_key_value")
+        if replication_key_value:
+            return float(replication_key_value)
+        else:
+            self.logger.info(
+                "Setting replication value to 0 to perform full historical sync."
+            )
+            return 0.0
