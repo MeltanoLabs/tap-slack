@@ -186,7 +186,7 @@ class IntegrationLogsStream(SlackStream):
     path = "/team.integrationLogs"
     primary_keys = ["user_id", "app_id"]
     replication_key = None
-    records_jsonpath = "team.[*]"
+    records_jsonpath = "logs.[*]"
     schema = schemas.integration_logs
 
     def get_next_page_token(self, response, previous_token):
