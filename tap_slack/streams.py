@@ -191,7 +191,7 @@ class IntegrationLogsStream(SlackStream):
 
     def get_next_page_token(self, response, previous_token):
         """Override default to apply rate throttling for streams."""
-        max_page = response.paging.pages
+        max_page = response.json()["paging"]["pages"]
         token = None
         if previous_token == max_page:
             token = previous_token + 1
