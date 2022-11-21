@@ -7,4 +7,6 @@ schema = th.PropertiesList(
     th.Property("change_type", th.StringType),
     th.Property("app_type", th.StringType),
     th.Property("app_id", th.StringType),
+    th.Property("service_id", th.NumberType),
+    th.Property("service_type", th.StringType),
 ).to_dict()

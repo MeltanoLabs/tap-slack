@@ -7,7 +7,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional, cast, Any, Dict
 from singer_sdk.helpers.jsonpath import extract_jsonpath
 
-from tap_slack.client import SlackStream
+from tap_slack.client import SlackStream, ThrottledPageNumberPaginator
 from tap_slack import schemas
 
 
@@ -124,7 +124,7 @@ class MessagesStream(SlackStream):
         return row
 
     def get_starting_replication_key_value(
-        self, context: Optional[dict]
+            self, context: Optional[dict]
     ) -> Optional[int]:
         """
         Threads can continue to have messages for weeks after the original message
@@ -184,32 +184,12 @@ class UsersStream(SlackStream):
 class IntegrationLogsStream(SlackStream):
     name = "integration_logs"
     path = "/team.integrationLogs"
-    primary_keys = ["user_id", "app_id"]
+    primary_keys = ["user_id"]
     replication_key = None
     records_jsonpath = "logs.[*]"
     schema = schemas.integration_logs
+    _page_size = 3
 
-    def get_next_page_token(self, response, previous_token):
-        """Override default to apply rate throttling for streams."""
-        max_page = response.json()["paging"]["pages"]
-        token = None
-        if previous_token == max_page:
-            token = previous_token + 1
-        if self.max_requests_per_minute:
-            time.sleep(60.0 / self.max_requests_per_minute)
-        return token
+    def get_new_paginator(self):
+        return ThrottledPageNumberPaginator(1)
 
-    def get_url_params(
-        self, context: Optional[dict], next_page_token: Optional[Any]
-    ) -> Dict[str, Any]:
-        """Return a dictionary of values to be used in URL parameterization."""
-        params = {}
-        if next_page_token:
-            params["page"] = next_page_token
-        if self._page_size:
-            params["limit"] = self._page_size
-        if context and "channel_id" in context:
-            params["channel"] = context["channel_id"]
-        if context and "thread_ts" in context:
-            params["ts"] = context["thread_ts"]
-        return params
