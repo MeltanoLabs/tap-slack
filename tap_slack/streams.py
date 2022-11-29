@@ -188,7 +188,7 @@ class IntegrationLogsStream(SlackStream):
     replication_key = None
     records_jsonpath = "logs.[*]"
     schema = schemas.integration_logs
-    _page_size = 3
+    _page_size = 500
 
     def get_new_paginator(self):
         return ThrottledPageNumberPaginator(1)
