@@ -83,7 +83,7 @@ class TapSlack(Tap):
         streams = [stream_class(tap=self) for stream_class in STREAM_TYPES]
 
         if self.config.get("include_admin_streams"):
-            streams.extend(stream_class(tap=self) for stream_class in ADMIN_STREAM_TYPES]
+            streams.extend([stream_class(tap=self) for stream_class in ADMIN_STREAM_TYPES])
 
         return streams
 
