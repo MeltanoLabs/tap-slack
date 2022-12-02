@@ -80,15 +80,10 @@ class TapSlack(Tap):
     def discover_streams(self) -> List[Stream]:
         """Return a list of discovered streams."""
 
+        streams = [stream_class(tap=self) for stream_class in STREAM_TYPES]
+
         if self.config.get("include_admin_streams"):
-            streams = [stream_class(tap=self) for stream_class in STREAM_TYPES]
-        else:
-            # Exclude admin streams
-            streams = [
-                stream_class(tap=self)
-                for stream_class in STREAM_TYPES
-                if stream_class not in ADMIN_STREAM_TYPES
-            ]
+            streams.extend(stream_class(tap=self) for stream_class in ADMIN_STREAM_TYPES]
 
         return streams
 
