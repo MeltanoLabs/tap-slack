@@ -2,7 +2,7 @@
 
 from typing import List
 
-from singer_sdk import Tap, Stream
+from singer_sdk import Stream, Tap
 from singer_sdk import typing as th
 from singer_sdk.helpers._compat import final
 
@@ -21,6 +21,7 @@ STREAM_TYPES = [
     ThreadsStream,
     UsersStream,
 ]
+ADMIN_STREAM_TYPES = []
 
 
 class TapSlack(Tap):
@@ -68,11 +69,23 @@ class TapSlack(Tap):
             th.ArrayType(th.StringType),
             description="A list of channel IDs that should not be retrieved. Excluding overrides a selected setting, so if a channel is included in both selected and excluded, it will be excluded.",
         ),
+        th.Property(
+            "include_admin_streams",
+            th.BooleanType,
+            default=False,
+            description="Whether to include streams that require admin privileges or not. If the user does not have the proper scopes then the tap will throw and exception.",
+        ),
     ).to_dict()
 
     def discover_streams(self) -> List[Stream]:
         """Return a list of discovered streams."""
-        return [stream_class(tap=self) for stream_class in STREAM_TYPES]
+
+        streams = [stream_class(tap=self) for stream_class in STREAM_TYPES]
+
+        if self.config.get("include_admin_streams"):
+            streams.extend([stream_class(tap=self) for stream_class in ADMIN_STREAM_TYPES])
+
+        return streams
 
     @property
     def expectations(self):
@@ -81,6 +94,7 @@ class TapSlack(Tap):
             "tap__discovery",
             "tap__stream_connections",
         ]
+
 
 if __name__ == "__main__":
     TapSlack.cli()
