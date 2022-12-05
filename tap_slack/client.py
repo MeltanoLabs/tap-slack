@@ -48,10 +48,7 @@ class ThrottledPageNumberPaginator(BasePageNumberPaginator):
         data = response.json()
         max_page = data["paging"]["pages"]
         current_page = data["paging"]["page"]
-        has_more = True
-        if current_page == max_page:
-            has_more = False
-        return has_more
+        return current_page != max_page
 
     def get_next(self, response: Response) -> str | None:
         """Get the next page token.
