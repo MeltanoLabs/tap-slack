@@ -19,7 +19,6 @@ schema = th.PropertiesList(
     th.Property("text", th.StringType),
     th.Property("user", th.StringType),
     th.Property("team", th.StringType),
-    th.Property("edited", th.StringType),
     th.Property(
         "edited",
         th.ObjectType(
