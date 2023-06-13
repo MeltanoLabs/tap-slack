@@ -27,7 +27,7 @@ schema = th.PropertiesList(
         )
     ),
     th.Property("files", th.ArrayType(th.ObjectType())),
-    th.Property("upload", th.StringType),
+    th.Property("upload", th.BooleanType),
     th.Property("parent_user_id", th.StringType),
     th.Property("display_as_bot", th.StringType),
     th.Property("is_locked", th.BooleanType),
