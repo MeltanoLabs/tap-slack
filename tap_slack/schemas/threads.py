@@ -26,7 +26,7 @@ schema = th.PropertiesList(
             th.Property("ts", th.StringType),
         )
     ),
-    th.Property("files", th.ArrayType(th.ObjectType()),
+    th.Property("files", th.ArrayType(th.ObjectType),
     th.Property("upload", th.StringType),
     th.Property("parent_user_id", th.StringType),
     th.Property("display_as_bot", th.StringType),
