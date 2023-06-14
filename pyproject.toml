@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tap-slack"
-version = "0.1.1"
+version = "0.1.6"
 description = "`tap-slack` is a Singer tap for Slack, built with the Meltano SDK for Singer Taps."
 authors = ["Stephen Bailey"]
 license = "Apache 2.0"
