@@ -4,13 +4,13 @@ schema = th.PropertiesList(
     th.Property("channel_id", th.StringType, required=True),
     th.Property(
         "thread_ts",
-        th.NumberType,
+        th.StringType,
         required=True,
         description="Epoch timestamp of when the thread parent message was posted.",
     ),
     th.Property(
         "ts",
-        th.NumberType,
+        th.StringType,
         required=True,
         description="Epoch timestamp of when the thread reply was posted.",
     ),
@@ -19,15 +19,18 @@ schema = th.PropertiesList(
     th.Property("text", th.StringType),
     th.Property("user", th.StringType),
     th.Property("team", th.StringType),
-    th.Property("edited", th.StringType),
-    th.Property("files", th.StringType),
-    th.Property("upload", th.StringType),
+    th.Property(
+        "edited",
+        th.ObjectType(
+            th.Property("user", th.StringType),
+            th.Property("ts", th.StringType),
+        )
+    ),
+    th.Property("files", th.ArrayType(th.ObjectType())),
+    th.Property("upload", th.BooleanType),
     th.Property("parent_user_id", th.StringType),
-    th.Property("display_as_bot", th.StringType),
-    th.Property("upload", th.StringType),
-    th.Property("edited", th.StringType),
+    th.Property("display_as_bot", th.BooleanType),
     th.Property("is_locked", th.BooleanType),
-    th.Property("files", th.StringType),
     th.Property(
         "blocks",
         th.ArrayType(
