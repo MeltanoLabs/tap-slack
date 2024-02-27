@@ -56,9 +56,10 @@ class ChannelsStream(SlackStream):
         )
         if not response.json().get("ok"):
             self.logger.warning(
-                "Error joining channel %s: %s", response.json().get("error")
+                f"Error joining channel: {response.json().get('error')}"
             )
-        self.logger.info("Successfully joined channel: %s", channel_id)
+        else:
+            self.logger.info("Successfully joined channel: %s", channel_id)
 
 
 class ChannelMembersStream(SlackStream):
