@@ -54,12 +54,15 @@ class ChannelsStream(SlackStream):
         response = self.requests_session.post(
             url=url, params=params, headers=self.authenticator.auth_headers
         )
-        if not response.json().get("ok"):
-            self.logger.warning(
-                f"Error joining channel: {response.json().get('error')}"
-            )
-        else:
-            self.logger.info("Successfully joined channel: %s", channel_id)
+        try: 
+            if not response.json().get("ok"):
+                self.logger.warning(
+                    f"Error joining channel: {response.json().get('error')}"
+                )
+            else:
+                self.logger.info("Successfully joined channel: %s", channel_id)
+        except Exception as e:
+            self.logger.warning(f"An exception was raised while joining channel {channel_id}: {e}. Reponse: {response}")
 
 
 class ChannelMembersStream(SlackStream):
