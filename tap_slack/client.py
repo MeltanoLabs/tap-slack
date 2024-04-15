@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Dict, List, Optional, Text
+import backoff
+from typing import Any, Dict, List, Optional, Text, Generator
 from http import HTTPStatus
 
 from requests import Response
@@ -103,3 +104,16 @@ class SlackStream(RESTStream):
     def get_new_paginator(self):
         """Override default to apply rate throttling for streams."""
         return ThrottledJSONPathPaginator(self.next_page_token_jsonpath)
+
+    def backoff_wait_generator(self) -> Generator[float, None, None]:
+        """Override the default wait generator because it tends to not wait long enough
+
+        See for options:
+        https://github.com/litl/backoff/blob/master/backoff/_wait_gen.py
+
+        And see for examples: `Code Samples <../code_samples.html#custom-backoff>`_
+
+        Returns:
+            The wait generator
+        """
+        return backoff.expo(base=2, factor=2, max_value=15)
