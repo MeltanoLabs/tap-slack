@@ -96,7 +96,7 @@ class MessagesStream(SlackStream):
     schema = schemas.messages
 
     ignore_parent_replication_key = True
-    max_requests_per_minute = 30
+    max_requests_per_minute = 45
 
     @property
     def threads_stream_start(self):
@@ -168,7 +168,6 @@ class MessageReactionsStream(MessagesStream):
     schema = schemas.reactions
 
     ignore_parent_replication_key = True
-    max_requests_per_minute = 30
     
     def get_records(self, context: dict | None) -> Iterable[dict[str, Any]]:
         """Return a generator of record-type dictionary objects.
@@ -233,7 +232,7 @@ class ThreadsStream(SlackStream):
     path = "/conversations.replies"
     primary_keys = ["channel_id", "thread_ts", "ts"]
     records_jsonpath = "messages.[*]"
-    max_requests_per_minute = 30
+    max_requests_per_minute = 45
     schema = schemas.threads
 
     state_partitioning_keys = []
@@ -258,7 +257,6 @@ class ThreadReactionsStream(ThreadsStream):
     schema = schemas.reactions
 
     ignore_parent_replication_key = True
-    max_requests_per_minute = 30
     
     def get_records(self, context: dict | None) -> Iterable[dict[str, Any]]:
         """Return a generator of record-type dictionary objects.
