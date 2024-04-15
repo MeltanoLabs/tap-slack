@@ -4,7 +4,7 @@ import pendulum
 import time
 
 from datetime import datetime, timezone, timedelta
-from typing import Any, Dict, Optional, Iterable, cast
+from typing import Any, List, Dict, Optional, Iterable, cast
 from singer_sdk.helpers.jsonpath import extract_jsonpath
 
 from tap_slack.client import SlackStream
@@ -96,13 +96,17 @@ class MessagesStream(SlackStream):
     schema = schemas.messages
 
     ignore_parent_replication_key = True
-    max_requests_per_minute = 50
+    max_requests_per_minute = 30
 
     @property
     def threads_stream_start(self):
         lookback_days = timedelta(days=self.config["thread_lookback_days"])
         start_date = datetime.now(tz=timezone.utc) - lookback_days
         return start_date.timestamp()
+    
+    def get_child_context(self, record, context):
+        """Return context dictionary for child stream."""
+        return {"channel_id": context.get("channel_id"), "record": record}
 
     def get_url_params(self, context, next_page_token):
         """Augment default to implement incremental syncing."""
@@ -154,6 +158,70 @@ class MessagesStream(SlackStream):
             return 0.0
 
 
+class MessageReactionsStream(MessagesStream):
+    name = "messages-reactions"
+    parent_stream_type = MessagesStream
+    # This stream does not use an explicit API: it relies on /conversations.history, same as the parent strem
+    primary_keys = ["id"]
+    replication_key = "ts"
+    records_jsonpath = "messages.[*]"
+    schema = schemas.reactions
+
+    ignore_parent_replication_key = True
+    max_requests_per_minute = 30
+    
+    def get_records(self, context: dict | None) -> Iterable[dict[str, Any]]:
+        """Return a generator of record-type dictionary objects.
+
+        Overridden function from RESTStream. Make use of the context provided by the
+        parent stream, which includes the record -> reactions can be processed from
+        this without re-calling the API
+
+        Yields:
+            One item per (possibly processed) record in the API.
+        """
+        processed_reactions = self.multi_post_process(context.get("record"), context)
+        for rec in processed_reactions:
+            yield rec
+
+
+    def multi_post_process(self, row: dict, context: Optional[dict]) -> List[dict]:
+        """
+        Extract only reactions as a separate stream
+        """
+
+        reaction_rows = self.extract_reactions_from_msg_record(row, context)        
+        return reaction_rows
+
+
+    def extract_reactions_from_msg_record(
+        self, row: dict, context: Optional[dict] = None
+    ) -> List[Dict]:
+        ret: List[Dict] = []
+        if "reactions" not in row:
+            return []
+        reactions = row["reactions"]
+        ts = row.get("ts", "0")
+        channel_id = context.get("channel_id")
+        thread_ts = row.get("thread_ts", "0")
+        original_msg_author = row.get("user", "")
+        for el in reactions:
+            for user in el["users"]:
+                reaction_name = el["name"]
+                ret.append(
+                    {
+                        "id": f"react-{ts}-{thread_ts}-{user}-{reaction_name}",
+                        "ts": ts,
+                        "thread_ts": thread_ts,
+                        "original_msg_author": original_msg_author,
+                        "channel_id": channel_id,
+                        "reaction": reaction_name,
+                        "user": user,
+                    }
+                )
+        return ret
+
+
 class ThreadsStream(SlackStream):
     """
     The threads stream is directly invoked by the Messages stream, but not via
@@ -165,7 +233,7 @@ class ThreadsStream(SlackStream):
     path = "/conversations.replies"
     primary_keys = ["channel_id", "thread_ts", "ts"]
     records_jsonpath = "messages.[*]"
-    max_requests_per_minute = 50
+    max_requests_per_minute = 30
     schema = schemas.threads
 
     state_partitioning_keys = []
@@ -174,6 +242,74 @@ class ThreadsStream(SlackStream):
         row = super().post_process(row, context=context)
         row["channel_id"] = context.get("channel_id")
         return row
+    
+    def get_child_context(self, record, context):
+        """Return context dictionary for child stream."""
+        return {"channel_id": context.get("channel_id"), "record": record}
+
+
+class ThreadReactionsStream(ThreadsStream):
+    name = "threads-reactions"
+    parent_stream_type = ThreadsStream
+    # This stream does not use an explicit API: it relies on /conversations.history, same as the parent strem
+    primary_keys = ["id"]
+    replication_key = "ts"
+    records_jsonpath = "messages.[*]"
+    schema = schemas.reactions
+
+    ignore_parent_replication_key = True
+    max_requests_per_minute = 30
+    
+    def get_records(self, context: dict | None) -> Iterable[dict[str, Any]]:
+        """Return a generator of record-type dictionary objects.
+
+        Overridden function from RESTStream. Make use of the context provided by the
+        parent stream, which includes the record -> reactions can be processed from
+        this without re-calling the API
+
+        Yields:
+            One item per (possibly processed) record in the API.
+        """
+        processed_reactions = self.multi_post_process(context.get("record"), context)
+        for rec in processed_reactions:
+            yield rec
+
+
+    def multi_post_process(self, row: dict, context: Optional[dict]) -> List[dict]:
+        """
+        Extract only reactions as a separate stream
+        """
+
+        reaction_rows = self.extract_reactions_from_msg_record(row, context)        
+        return reaction_rows
+
+
+    def extract_reactions_from_msg_record(
+        self, row: dict, context: Optional[dict] = None
+    ) -> List[Dict]:
+        ret: List[Dict] = []
+        if "reactions" not in row:
+            return []
+        reactions = row["reactions"]
+        ts = row.get("ts", "0")
+        channel_id = context.get("channel_id")
+        thread_ts = row.get("thread_ts", "0")
+        original_msg_author = row.get("user", "")
+        for el in reactions:
+            for user in el["users"]:
+                reaction_name = el["name"]
+                ret.append(
+                    {
+                        "id": f"react-{ts}-{thread_ts}-{user}-{reaction_name}",
+                        "ts": ts,
+                        "thread_ts": thread_ts,
+                        "original_msg_author": original_msg_author,
+                        "channel_id": channel_id,
+                        "reaction": reaction_name,
+                        "user": user,
+                    }
+                )
+        return ret
 
 
 class UsersStream(SlackStream):
