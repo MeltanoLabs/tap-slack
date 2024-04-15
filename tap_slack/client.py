@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import time
 from typing import Any, Dict, List, Optional, Text
+from http import HTTPStatus
 
 from requests import Response
 from singer_sdk.authenticators import BearerTokenAuthenticator
 from singer_sdk.pagination import JSONPathPaginator
 from singer_sdk.streams import RESTStream
+from singer_sdk.exceptions import FatalAPIError, RetriableAPIError
 
 
 class ThrottledJSONPathPaginator(JSONPathPaginator):
@@ -37,6 +39,35 @@ class SlackStream(RESTStream):
     url_base = "https://slack.com/api"
     records_jsonpath = "$[*]"
     next_page_token_jsonpath = "$.response_metadata.next_cursor"
+
+    def validate_response(self, response: Response) -> None:
+        """
+        Override RESTStream's default validator to handle edge cases specific to Slack's API
+        """
+        if (
+            response.status_code in self.extra_retry_statuses
+            or response.status_code >= HTTPStatus.INTERNAL_SERVER_ERROR
+        ):
+            msg = self.response_error_message(response)
+            raise RetriableAPIError(msg, response)
+
+        if (
+            HTTPStatus.BAD_REQUEST
+            <= response.status_code
+            < HTTPStatus.INTERNAL_SERVER_ERROR
+        ):
+            msg = self.response_error_message(response)
+            raise FatalAPIError(msg)
+        
+        # Slack's API has a funny behavior in case of a bad auth token: 200 response with "invalid_auth"
+        # Other errors may be acceptable, like "not_in_channel"
+        try:
+            parsed_res = response.json()
+            if parsed_res.get("ok", True) == False and parsed_res.get("error", "") == "invalid_auth":
+                raise FatalAPIError(f"Slack API error: {parsed_res.get('error','')}")
+        except ValueError:
+            # Do nothing, as the response might simply not be a json
+            pass
 
     @property
     def authenticator(self) -> BearerTokenAuthenticator:
