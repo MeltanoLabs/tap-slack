@@ -1,11 +1,21 @@
 """Stream type classes for tap-slack."""
+
 import requests
 import pendulum
 import time
+import copy
 
 from datetime import datetime, timezone, timedelta
-from typing import Any, List, Dict, Optional, Iterable, cast
+from typing import Any, List, Dict, Optional, Iterable, Generator, cast
 from singer_sdk.helpers.jsonpath import extract_jsonpath
+from singer_sdk import metrics
+from singer_sdk.exceptions import (
+    InvalidStreamSortException,
+)
+from singer_sdk.helpers._state import (
+    log_sort_error,
+)
+
 
 from tap_slack.client import SlackStream
 from tap_slack import schemas
@@ -162,9 +172,6 @@ class MessageReactionsStream(MessagesStream):
     name = "messages-reactions"
     parent_stream_type = MessagesStream
     # This stream does not use an explicit API: it relies on /conversations.history, same as the parent strem
-    primary_keys = ["id"]
-    replication_key = "ts"
-    records_jsonpath = "messages.[*]"
     schema = schemas.reactions
 
     ignore_parent_replication_key = True
@@ -179,29 +186,35 @@ class MessageReactionsStream(MessagesStream):
         Yields:
             One item per (possibly processed) record in the API.
         """
-        processed_reactions = self.multi_post_process(context.get("record"), context)
+        if "record" not in context or "record" not in context:
+            return
+        # As per https://sdk.meltano.com/en/latest/context_object.html, context is not supposed to be
+        # mutated... but this object gets stored in the Meltano DB and also gets printed to the console,
+        # which are two behaviors we don't want. Singer doesn't seem to have a way to pass "as is" a
+        # record from parent to child without the context, so pop
+        record = context.pop("record")
+        channel_id = context.pop("channel_id")
+        context = None
+        processed_reactions = self.multi_post_process(record, channel_id)
         for rec in processed_reactions:
             yield rec
 
-
-    def multi_post_process(self, row: dict, context: Optional[dict]) -> List[dict]:
+    def multi_post_process(self, row: dict, channel_id: str) -> List[dict]:
         """
         Extract only reactions as a separate stream
         """
 
-        reaction_rows = self.extract_reactions_from_msg_record(row, context)        
+        reaction_rows = self.extract_reactions_from_msg_record(row, channel_id)
         return reaction_rows
 
-
     def extract_reactions_from_msg_record(
-        self, row: dict, context: Optional[dict] = None
+        self, row: dict, channel_id: str
     ) -> List[Dict]:
         ret: List[Dict] = []
         if "reactions" not in row:
             return []
         reactions = row["reactions"]
         ts = row.get("ts", "0")
-        channel_id = context.get("channel_id")
         thread_ts = row.get("thread_ts", "0")
         original_msg_author = row.get("user", "")
         for el in reactions:
@@ -219,6 +232,104 @@ class MessageReactionsStream(MessagesStream):
                     }
                 )
         return ret
+
+    def _sync_records(  # noqa: C901
+        self,
+        context: dict | None = None,
+        *,
+        write_messages: bool = True,
+    ) -> Generator[dict, Any, Any]:
+        """Override Singer SDK's sync to get rid of partitions within the context
+        """
+        # Initialize metrics
+        record_counter = metrics.record_counter(self.name)
+        timer = metrics.sync_timer(self.name)
+
+        
+        record_index = 0
+        context_element: dict | None
+        context_list: list[dict] | None
+        context_list = [context] if context is not None else self.partitions
+        selected = self.selected
+        
+        with record_counter, timer:
+            for context_element in context_list or [{}]:
+                record_counter.context = context_element
+                timer.context = context_element
+
+                # Small hack: we don't need/want to store parent-specific context, overwrite
+                # the context stored within the tap state
+                current_context = context_element or None
+                default_context = {"default": "default"}
+                state = self.get_context_state(default_context)
+                state_partition_context = self._get_state_partition_context(
+                    default_context,
+                )
+                self._write_starting_replication_value(default_context)
+                child_context: dict = copy.copy(default_context)
+
+                for idx, record_result in enumerate(self.get_records(current_context)):
+                    self._check_max_record_limit(current_record_index=record_index)
+
+                    if isinstance(record_result, tuple):
+                        # Tuple items should be the record and the child context
+                        record, child_context = record_result
+                    else:
+                        record = record_result
+                    try:
+                        self._process_record(
+                            record,
+                            child_context=child_context,
+                            partition_context=state_partition_context,
+                        )
+                    except InvalidStreamSortException as ex:
+                        log_sort_error(
+                            log_fn=self.logger.error,
+                            ex=ex,
+                            record_count=record_index + 1,
+                            partition_record_count=idx + 1,
+                            current_context=current_context,
+                            state_partition_context={"default": "default"},
+                            stream_name=self.name,
+                        )
+                        raise ex
+
+                    if selected:
+                        if write_messages:
+                            self._write_record_message(record)
+
+                        self._increment_stream_state(record, context=current_context)
+                        if (
+                            record_index + 1
+                        ) % self.STATE_MSG_FREQUENCY == 0 and write_messages:
+                            self._write_state_message()
+
+                        record_counter.increment()
+                        yield record
+
+                    record_index += 1
+
+                if current_context == state_partition_context:
+                    # Finalize per-partition state only if 1:1 with context
+                    self._finalize_state(state)
+
+        if not context:
+            # Finalize total stream only if we have the full context.
+            # Otherwise will be finalized by tap at end of sync.
+            self._finalize_state(self.stream_state)
+
+        if write_messages:
+            # Write final state message if we haven't already
+            self._write_state_message()
+
+
+    @property
+    def partitions(self) -> list[dict] | None:
+        """
+        Intentionally ignore partitions for this stream: no need to maintain bookmarks for every
+        single message a reaction refers to
+        """
+        return None
 
 
 class ThreadsStream(SlackStream):
@@ -241,7 +352,7 @@ class ThreadsStream(SlackStream):
         row = super().post_process(row, context=context)
         row["channel_id"] = context.get("channel_id")
         return row
-    
+
     def get_child_context(self, record, context):
         """Return context dictionary for child stream."""
         return {"channel_id": context.get("channel_id"), "record": record}
@@ -251,13 +362,10 @@ class ThreadReactionsStream(ThreadsStream):
     name = "threads-reactions"
     parent_stream_type = ThreadsStream
     # This stream does not use an explicit API: it relies on /conversations.history, same as the parent strem
-    primary_keys = ["id"]
-    replication_key = "ts"
-    records_jsonpath = "messages.[*]"
     schema = schemas.reactions
 
     ignore_parent_replication_key = True
-    
+
     def get_records(self, context: dict | None) -> Iterable[dict[str, Any]]:
         """Return a generator of record-type dictionary objects.
 
@@ -268,29 +376,30 @@ class ThreadReactionsStream(ThreadsStream):
         Yields:
             One item per (possibly processed) record in the API.
         """
-        processed_reactions = self.multi_post_process(context.get("record"), context)
+        # See comment in MessageReactionsStream.get_records
+        record = context.pop("record")
+        channel_id = context.pop("channel_id")
+        context = None
+        processed_reactions = self.multi_post_process(record, channel_id)
         for rec in processed_reactions:
             yield rec
 
-
-    def multi_post_process(self, row: dict, context: Optional[dict]) -> List[dict]:
+    def multi_post_process(self, row: dict, channel_id: str) -> List[dict]:
         """
         Extract only reactions as a separate stream
         """
 
-        reaction_rows = self.extract_reactions_from_msg_record(row, context)        
+        reaction_rows = self.extract_reactions_from_msg_record(row, channel_id)
         return reaction_rows
 
-
     def extract_reactions_from_msg_record(
-        self, row: dict, context: Optional[dict] = None
+        self, row: dict, channel_id: str
     ) -> List[Dict]:
         ret: List[Dict] = []
         if "reactions" not in row:
             return []
         reactions = row["reactions"]
         ts = row.get("ts", "0")
-        channel_id = context.get("channel_id")
         thread_ts = row.get("thread_ts", "0")
         original_msg_author = row.get("user", "")
         for el in reactions:
@@ -308,6 +417,104 @@ class ThreadReactionsStream(ThreadsStream):
                     }
                 )
         return ret
+
+    def _sync_records(  # noqa: C901
+        self,
+        context: dict | None = None,
+        *,
+        write_messages: bool = True,
+    ) -> Generator[dict, Any, Any]:
+        """Override Singer SDK's sync to get rid of partitions within the context
+        """
+        # Initialize metrics
+        record_counter = metrics.record_counter(self.name)
+        timer = metrics.sync_timer(self.name)
+
+        
+        record_index = 0
+        context_element: dict | None
+        context_list: list[dict] | None
+        context_list = [context] if context is not None else self.partitions
+        selected = self.selected
+        
+        with record_counter, timer:
+            for context_element in context_list or [{}]:
+                record_counter.context = context_element
+                timer.context = context_element
+
+                # Small hack: we don't need/want to store parent-specific context, overwrite
+                # the context stored within the tap state
+                current_context = context_element or None
+                default_context = {"default": "default"}
+                state = self.get_context_state(default_context)
+                state_partition_context = self._get_state_partition_context(
+                    default_context,
+                )
+                self._write_starting_replication_value(default_context)
+                child_context: dict = copy.copy(default_context)
+
+                for idx, record_result in enumerate(self.get_records(current_context)):
+                    self._check_max_record_limit(current_record_index=record_index)
+
+                    if isinstance(record_result, tuple):
+                        # Tuple items should be the record and the child context
+                        record, child_context = record_result
+                    else:
+                        record = record_result
+                    try:
+                        self._process_record(
+                            record,
+                            child_context=child_context,
+                            partition_context=state_partition_context,
+                        )
+                    except InvalidStreamSortException as ex:
+                        log_sort_error(
+                            log_fn=self.logger.error,
+                            ex=ex,
+                            record_count=record_index + 1,
+                            partition_record_count=idx + 1,
+                            current_context=current_context,
+                            state_partition_context={"default": "default"},
+                            stream_name=self.name,
+                        )
+                        raise ex
+
+                    if selected:
+                        if write_messages:
+                            self._write_record_message(record)
+
+                        self._increment_stream_state(record, context=current_context)
+                        if (
+                            record_index + 1
+                        ) % self.STATE_MSG_FREQUENCY == 0 and write_messages:
+                            self._write_state_message()
+
+                        record_counter.increment()
+                        yield record
+
+                    record_index += 1
+
+                if current_context == state_partition_context:
+                    # Finalize per-partition state only if 1:1 with context
+                    self._finalize_state(state)
+
+        if not context:
+            # Finalize total stream only if we have the full context.
+            # Otherwise will be finalized by tap at end of sync.
+            self._finalize_state(self.stream_state)
+
+        if write_messages:
+            # Write final state message if we haven't already
+            self._write_state_message()
+
+
+    @property
+    def partitions(self) -> list[dict] | None:
+        """
+        Intentionally ignore partitions for this stream: no need to maintain bookmarks for every
+        single message a reaction refers to
+        """
+        return None
 
 
 class UsersStream(SlackStream):
