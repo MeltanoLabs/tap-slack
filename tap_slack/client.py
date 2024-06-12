@@ -66,6 +66,9 @@ class SlackStream(RESTStream):
             parsed_res = response.json()
             if parsed_res.get("ok", True) == False and parsed_res.get("error", "") == "invalid_auth":
                 raise FatalAPIError(f"Slack API error: {parsed_res.get('error','')}")
+            
+            if parsed_res.get("ok", True) == False and parsed_res.get("error", "") == "missing_scope":
+                raise FatalAPIError(f"Slack API error: insufficient scope. {parsed_res}")
         except ValueError:
             # Do nothing, as the response might simply not be a json
             pass
