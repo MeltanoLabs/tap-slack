@@ -4,7 +4,6 @@ from typing import List
 
 from singer_sdk import Stream, Tap
 from singer_sdk import typing as th
-from singer_sdk.helpers._compat import final
 
 from tap_slack.streams import (
     ChannelsStream,
