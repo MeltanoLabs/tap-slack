@@ -4,6 +4,7 @@ from typing import List
 
 from singer_sdk import Stream, Tap
 from singer_sdk import typing as th
+
 # from singer_sdk.helpers._compat import final
 
 from tap_slack.streams import (
@@ -18,7 +19,9 @@ from tap_slack.streams import (
 
 STREAM_TYPES = [
     ChannelsStream,
-    ChannelMembersStream,
+    # For now, disable the stream of members included in a channel
+    # It is not very useful information, and not used by Argo reports
+    # ChannelMembersStream,
     MessagesStream,
     ThreadsStream,
     UsersStream,
@@ -87,7 +90,9 @@ class TapSlack(Tap):
         streams = [stream_class(tap=self) for stream_class in STREAM_TYPES]
 
         if self.config.get("include_admin_streams"):
-            streams.extend([stream_class(tap=self) for stream_class in ADMIN_STREAM_TYPES])
+            streams.extend(
+                [stream_class(tap=self) for stream_class in ADMIN_STREAM_TYPES]
+            )
 
         return streams
 
