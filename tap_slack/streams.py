@@ -44,6 +44,9 @@ class ChannelsStream(SlackStream):
         row = super().post_process(row, context)
         # return all in selected_channels or default to all, exclude any in excluded_channels list
         channel_id = row["id"]
+        is_archived = row["is_archived"]
+        if is_archived:
+            return
         if self._is_channel_included(channel_id):
             if not row["is_member"] and self.config.get("auto_join_channels", False):
                 self._join_channel(channel_id)
@@ -73,6 +76,15 @@ class ChannelsStream(SlackStream):
                 self.logger.info("Successfully joined channel: %s", channel_id)
         except Exception as e:
             self.logger.warning(f"An exception was raised while joining channel {channel_id}: {e}. Reponse: {response}")
+
+    def get_records(self, context: dict | None) -> Iterable[dict[str, Any]]:
+        all_channels = [el for el in self.request_records(context) if not el["is_archived"]]
+        for record in all_channels:
+            transformed_record = self.post_process(record, context)
+            if transformed_record is None:
+                # Record filtered out during post_process()
+                continue
+            yield transformed_record
 
 
 class ChannelMembersStream(SlackStream):
@@ -106,7 +118,7 @@ class MessagesStream(SlackStream):
     schema = schemas.messages
 
     ignore_parent_replication_key = True
-    max_requests_per_minute = 45
+    max_requests_per_minute = 49
 
     @property
     def threads_stream_start(self):
@@ -125,6 +137,14 @@ class MessagesStream(SlackStream):
         if start_timestamp:
             params["oldest"] = start_timestamp
         return params
+
+    def get_records(self, context: dict | None) -> Iterable[dict[str, Any]]:
+        for record in self.request_records(context):
+            transformed_record = self.post_process(record, context)
+            if transformed_record is None:
+                # Record filtered out during post_process()
+                continue
+            yield transformed_record
 
     def post_process(self, row: dict, context: Optional[dict]) -> dict:
         """
@@ -330,6 +350,31 @@ class MessageReactionsStream(MessagesStream):
         single message a reaction refers to
         """
         return None
+    
+    def sync(self, context: dict | None = None) -> None:
+        # Use a replication signpost, if available
+        signpost = self.get_replication_key_signpost(context)
+        if signpost:
+            self._write_replication_key_signpost(context, signpost)
+
+        # Send a SCHEMA message to the downstream target:
+        if self.selected:
+            self._write_schema_message()
+
+        try:
+            batch_config = self.get_batch_config(self.config)
+            if batch_config:
+                self._sync_batches(batch_config, context=context)
+            else:
+                # Sync the records themselves:
+                for _ in self._sync_records(context=context):
+                    pass
+        except Exception as ex:
+            self.logger.exception(
+                "An unhandled error occurred while syncing '%s'",
+                self.name,
+            )
+            raise ex
 
 
 class ThreadsStream(SlackStream):
@@ -343,7 +388,7 @@ class ThreadsStream(SlackStream):
     path = "/conversations.replies"
     primary_keys = ["channel_id", "thread_ts", "ts"]
     records_jsonpath = "messages.[*]"
-    max_requests_per_minute = 45
+    max_requests_per_minute = 49
     schema = schemas.threads
 
     state_partitioning_keys = []
@@ -357,6 +402,13 @@ class ThreadsStream(SlackStream):
         """Return context dictionary for child stream."""
         return {"channel_id": context.get("channel_id"), "record": record}
 
+    def get_records(self, context: dict | None) -> Iterable[dict[str, Any]]:
+        for record in self.request_records(context):
+            transformed_record = self.post_process(record, context)
+            if transformed_record is None:
+                # Record filtered out during post_process()
+                continue
+            yield transformed_record
 
 class ThreadReactionsStream(ThreadsStream):
     name = "threads-reactions"
@@ -506,6 +558,31 @@ class ThreadReactionsStream(ThreadsStream):
         if write_messages:
             # Write final state message if we haven't already
             self._write_state_message()
+
+    def sync(self, context: dict | None = None) -> None:
+        # Use a replication signpost, if available
+        signpost = self.get_replication_key_signpost(context)
+        if signpost:
+            self._write_replication_key_signpost(context, signpost)
+
+        # Send a SCHEMA message to the downstream target:
+        if self.selected:
+            self._write_schema_message()
+
+        try:
+            batch_config = self.get_batch_config(self.config)
+            if batch_config:
+                self._sync_batches(batch_config, context=context)
+            else:
+                # Sync the records themselves:
+                for _ in self._sync_records(context=context):
+                    pass
+        except Exception as ex:
+            self.logger.exception(
+                "An unhandled error occurred while syncing '%s'",
+                self.name,
+            )
+            raise ex
 
 
     @property
