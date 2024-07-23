@@ -41,6 +41,11 @@ class SlackStream(RESTStream):
     records_jsonpath = "$[*]"
     next_page_token_jsonpath = "$.response_metadata.next_cursor"
 
+    @property
+    def timeout(self) -> int:
+        # Instead of the default 300 seconds
+        return 30
+
     def validate_response(self, response: Response) -> None:
         """
         Override RESTStream's default validator to handle edge cases specific to Slack's API
