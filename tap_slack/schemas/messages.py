@@ -13,10 +13,15 @@ schema = th.PropertiesList(
         th.ArrayType(
             th.ObjectType(
                 th.Property("type", th.StringType),
+                th.Property("block_id", th.StringType),
+                th.Property("elements", th.ArrayType(th.AnyType)),
             )
         ),
     ),
+    th.Property("root", th.StringType),
     th.Property("bot_id", th.StringType),
+    th.Property("app_id", th.StringType),
+    th.Property("bot_profile", th.AnyType),
     th.Property(
         "bot_profile",
         th.ObjectType(
@@ -26,6 +31,7 @@ schema = th.PropertiesList(
             th.Property("name", th.StringType),
             th.Property("team_id", th.StringType),
             th.Property("updated", th.IntegerType),
+            th.Property("icons", th.AnyType),
         ),
     ),
     th.Property("client_msg_id", th.StringType),
@@ -57,10 +63,19 @@ schema = th.PropertiesList(
             th.ObjectType(
                 th.Property("count", th.IntegerType),
                 th.Property("name", th.StringType),
+                th.Property("url", th.StringType),
                 th.Property("users", th.ArrayType(th.StringType)),
             )
         ),
     ),
+    th.Property(
+        "edited",
+        th.ObjectType(
+            th.Property("user", th.StringType),
+            th.Property("ts", th.StringType),
+        )
+    ),
+    th.Property("attachments", th.ArrayType(th.AnyType)),
     th.Property("reply_count", th.IntegerType),
     th.Property("reply_users", th.ArrayType(th.StringType)),
     th.Property("reply_users_count", th.IntegerType),

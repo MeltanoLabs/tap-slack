@@ -35,10 +35,19 @@ schema = th.PropertiesList(
         "blocks",
         th.ArrayType(
             th.ObjectType(
+                th.Property("block_id", th.StringType),
                 th.Property("type", th.StringType),
+                th.Property("elements", th.ArrayType(th.AnyType)),
             )
         ),
     ),
+    th.Property("subtype", th.StringType),
+    th.Property("bot_id", th.StringType),
+    th.Property("bot_profile", th.AnyType),
+    th.Property("root", th.StringType),
+    th.Property("app_id", th.StringType),
+    th.Property("attachments", th.ArrayType(th.AnyType)),
+    th.Property("reactions", th.ArrayType(th.AnyType)),
     th.Property("reply_count", th.IntegerType),
     th.Property("reply_users_count", th.NumberType),
     th.Property("latest_reply", th.StringType),
