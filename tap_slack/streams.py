@@ -4,11 +4,12 @@ import requests
 import pendulum
 import time
 import copy
+import logging
 
 from datetime import datetime, timezone, timedelta
 from typing import Any, List, Dict, Optional, Iterable, Generator, cast
 from singer_sdk.helpers.jsonpath import extract_jsonpath
-from singer_sdk import metrics
+from singer_sdk import metrics, Tap
 from singer_sdk.exceptions import (
     InvalidStreamSortException,
 )
@@ -27,6 +28,10 @@ class ChannelsStream(SlackStream):
     primary_keys = ["id"]
     records_jsonpath = "channels.[*]"
     schema = schemas.channels
+
+    def __init__(self, tap: Tap):
+        super().__init__(tap)
+        logging.getLogger("singer_sdk.metrics").setLevel(logging.WARNING)
 
     def get_child_context(self, record, context):
         """Return context dictionary for child stream."""
@@ -280,7 +285,7 @@ class MessageReactionsStream(MessagesStream):
                 # Small hack: we don't need/want to store parent-specific context, overwrite
                 # the context stored within the tap state
                 current_context = context_element or None
-                default_context = {"default": "default"}
+                default_context = {}
                 state = self.get_context_state(default_context)
                 state_partition_context = self._get_state_partition_context(
                     default_context,
@@ -497,7 +502,7 @@ class ThreadReactionsStream(ThreadsStream):
                 # Small hack: we don't need/want to store parent-specific context, overwrite
                 # the context stored within the tap state
                 current_context = context_element or None
-                default_context = {"default": "default"}
+                default_context = {}
                 state = self.get_context_state(default_context)
                 state_partition_context = self._get_state_partition_context(
                     default_context,
