@@ -46,7 +46,6 @@ schema = th.PropertiesList(
     th.Property("bot_profile", th.AnyType),
     th.Property("root", th.StringType),
     th.Property("app_id", th.StringType),
-    th.Property("attachments", th.ArrayType(th.AnyType)),
     th.Property("reactions", th.ArrayType(th.AnyType)),
     th.Property("reply_count", th.IntegerType),
     th.Property("reply_users_count", th.NumberType),

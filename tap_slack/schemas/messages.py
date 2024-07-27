@@ -75,7 +75,6 @@ schema = th.PropertiesList(
             th.Property("ts", th.StringType),
         )
     ),
-    th.Property("attachments", th.ArrayType(th.AnyType)),
     th.Property("reply_count", th.IntegerType),
     th.Property("reply_users", th.ArrayType(th.StringType)),
     th.Property("reply_users_count", th.IntegerType),
