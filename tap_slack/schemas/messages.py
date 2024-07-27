@@ -18,7 +18,7 @@ schema = th.PropertiesList(
             )
         ),
     ),
-    th.Property("root", th.StringType),
+    # th.Property("root", th.StringType),
     th.Property("bot_id", th.StringType),
     th.Property("app_id", th.StringType),
     th.Property("bot_profile", th.AnyType),
