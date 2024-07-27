@@ -14,7 +14,7 @@ schema = th.PropertiesList(
             th.ObjectType(
                 th.Property("type", th.StringType),
                 th.Property("block_id", th.StringType),
-                th.Property("elements", th.ArrayType(th.AnyType)),
+                # th.Property("elements", th.ArrayType(th.AnyType)),
             )
         ),
     ),
@@ -31,7 +31,7 @@ schema = th.PropertiesList(
             th.Property("name", th.StringType),
             th.Property("team_id", th.StringType),
             th.Property("updated", th.IntegerType),
-            th.Property("icons", th.AnyType),
+            # th.Property("icons", th.AnyType),
         ),
     ),
     th.Property("client_msg_id", th.StringType),

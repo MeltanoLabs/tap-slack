@@ -37,7 +37,7 @@ schema = th.PropertiesList(
             th.ObjectType(
                 th.Property("block_id", th.StringType),
                 th.Property("type", th.StringType),
-                th.Property("elements", th.ArrayType(th.AnyType)),
+                # th.Property("elements", th.ArrayType(th.AnyType)),
             )
         ),
     ),
