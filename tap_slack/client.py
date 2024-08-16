@@ -107,6 +107,8 @@ class SlackStream(RESTStream):
             params["channel"] = context["channel_id"]
         if context and "thread_ts" in context:
             params["ts"] = context["thread_ts"]
+        if self.config.get("team_id"):
+            params["team_id"] = self.config.get("team_id")
         return params
 
     def get_new_paginator(self):
