@@ -42,6 +42,7 @@ class ChannelsStream(SlackStream):
         params = super().get_url_params(context, next_page_token)
         params["exclude_archived"] = False
         params["types"] = ",".join(self.config["channel_types"])
+
         return params
 
     def post_process(self, row, context):

@@ -82,6 +82,12 @@ class TapSlack(Tap):
             default=False,
             description="Whether to include streams that require admin privileges or not. If the user does not have the proper scopes then the tap will throw and exception.",
         ),
+        th.Property(
+            "team_id",
+            th.StringType,
+            default=False,
+            description="If the Slack app is part of an organization, the team_id specifies which workspace to pull from.",
+        ),
     ).to_dict()
 
     def discover_streams(self) -> List[Stream]:
