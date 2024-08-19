@@ -85,7 +85,7 @@ class TapSlack(Tap):
         th.Property(
             "team_id",
             th.StringType,
-            default=False,
+            default="",
             description="If the Slack app is part of an organization, the team_id specifies which workspace to pull from.",
         ),
     ).to_dict()
