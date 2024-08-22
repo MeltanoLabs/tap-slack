@@ -16,6 +16,8 @@ schema = th.PropertiesList(
     th.Property("is_general", th.BooleanType),
     th.Property("unlinked", th.IntegerType),
     th.Property("name_normalized", th.StringType),
+    th.Property("team_name", th.StringType),
+    th.Property("workspace_url", th.StringType),
     th.Property("is_shared", th.BooleanType),
     th.Property("is_ext_shared", th.BooleanType),
     th.Property("is_org_shared", th.BooleanType),

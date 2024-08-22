@@ -32,6 +32,7 @@ class ChannelsStream(SlackStream):
     def __init__(self, tap: Tap):
         super().__init__(tap)
         logging.getLogger("singer_sdk.metrics").setLevel(logging.WARNING)
+        self.base_info = self._get_auth_info()
 
     def get_child_context(self, record, context):
         """Return context dictionary for child stream."""
@@ -51,6 +52,10 @@ class ChannelsStream(SlackStream):
         # return all in selected_channels or default to all, exclude any in excluded_channels list
         channel_id = row["id"]
         is_archived = row["is_archived"]
+
+        row["team_name"] = self.base_info.get("team", "")
+        row["workspace_url"] = self.base_info.get("url", "")
+
         if is_archived:
             return
         if self._is_channel_included(channel_id):
@@ -66,6 +71,17 @@ class ChannelsStream(SlackStream):
         if selected_channels and channel_id not in selected_channels:
                 return False
         return True
+
+    def _get_auth_info(self) -> requests.Response:
+        url = f"{self.url_base}/auth.test"
+        params = {}
+        response = self.requests_session.get(
+            url=url, params=params, headers=self.authenticator.auth_headers
+        )
+        if response.status_code != 200:
+            self.logger.warning(f"Error fetching base auth info")
+            return {}
+        return response.json()
 
     def _join_channel(self, channel_id: str) -> requests.Response:
         url = f"{self.url_base}/conversations.join"
