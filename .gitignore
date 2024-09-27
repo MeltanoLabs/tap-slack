@@ -136,3 +136,4 @@ dmypy.json
 .meltano
 .secrets
 .DS_Store
+.vscode
