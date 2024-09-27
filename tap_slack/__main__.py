@@ -1,4 +1,4 @@
-"""ServiceTitan entry point."""
+"""Slack entry point."""
 
 from __future__ import annotations
 
