@@ -93,7 +93,3 @@ class TapSlack(Tap):
             "tap__discovery",
             "tap__stream_connections",
         ]
-
-
-if __name__ == "__main__":
-    TapSlack.cli()
