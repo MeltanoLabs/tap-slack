@@ -56,6 +56,10 @@ class ChannelsStream(SlackStream):
         row["team_name"] = self.base_info.get("team", "")
         row["workspace_url"] = self.base_info.get("url", "")
 
+        # Convert any integer timestamps to strings to match schema
+        if "updated" in row and isinstance(row["updated"], int):
+            row["updated"] = str(row["updated"])
+
         if is_archived:
             return
         if self._is_channel_included(channel_id):
@@ -67,9 +71,9 @@ class ChannelsStream(SlackStream):
         selected_channels = self.config.get("selected_channels")
         excluded_channels = self.config.get("excluded_channels", [])
         if channel_id in excluded_channels:
-                return False
+            return False
         if selected_channels and channel_id not in selected_channels:
-                return False
+            return False
         return True
 
     def _get_auth_info(self) -> requests.Response:
@@ -89,7 +93,7 @@ class ChannelsStream(SlackStream):
         response = self.requests_session.post(
             url=url, params=params, headers=self.authenticator.auth_headers
         )
-        try: 
+        try:
             if not response.json().get("ok"):
                 self.logger.warning(
                     f"Error joining channel: {response.json().get('error')}"
@@ -97,10 +101,14 @@ class ChannelsStream(SlackStream):
             else:
                 self.logger.info("Successfully joined channel: %s", channel_id)
         except Exception as e:
-            self.logger.warning(f"An exception was raised while joining channel {channel_id}: {e}. Reponse: {response}")
+            self.logger.warning(
+                f"An exception was raised while joining channel {channel_id}: {e}. Reponse: {response}"
+            )
 
     def get_records(self, context: dict | None) -> Iterable[dict[str, Any]]:
-        all_channels = [el for el in self.request_records(context) if not el["is_archived"]]
+        all_channels = [
+            el for el in self.request_records(context) if not el["is_archived"]
+        ]
         for record in all_channels:
             transformed_record = self.post_process(record, context)
             if transformed_record is None:
@@ -147,7 +155,7 @@ class MessagesStream(SlackStream):
         lookback_days = timedelta(days=self.config["thread_lookback_days"])
         start_date = datetime.now(tz=timezone.utc) - lookback_days
         return start_date.timestamp()
-    
+
     def get_child_context(self, record, context):
         """Return context dictionary for child stream."""
         return {"channel_id": context.get("channel_id"), "record": record}
@@ -217,7 +225,7 @@ class MessageReactionsStream(MessagesStream):
     schema = schemas.reactions
 
     ignore_parent_replication_key = True
-    
+
     def get_records(self, context: dict | None) -> Iterable[dict[str, Any]]:
         """Return a generator of record-type dictionary objects.
 
@@ -281,19 +289,17 @@ class MessageReactionsStream(MessagesStream):
         *,
         write_messages: bool = True,
     ) -> Generator[dict, Any, Any]:
-        """Override Singer SDK's sync to get rid of partitions within the context
-        """
+        """Override Singer SDK's sync to get rid of partitions within the context"""
         # Initialize metrics
         record_counter = metrics.record_counter(self.name)
         timer = metrics.sync_timer(self.name)
 
-        
         record_index = 0
         context_element: dict | None
         context_list: list[dict] | None
         context_list = [context] if context is not None else self.partitions
         selected = self.selected
-        
+
         with record_counter, timer:
             for context_element in context_list or [{}]:
                 record_counter.context = context_element
@@ -364,7 +370,6 @@ class MessageReactionsStream(MessagesStream):
             # Write final state message if we haven't already
             self._write_state_message()
 
-
     @property
     def partitions(self) -> list[dict] | None:
         """
@@ -372,7 +377,7 @@ class MessageReactionsStream(MessagesStream):
         single message a reaction refers to
         """
         return None
-    
+
     def sync(self, context: dict | None = None) -> None:
         # Use a replication signpost, if available
         signpost = self.get_replication_key_signpost(context)
@@ -431,6 +436,7 @@ class ThreadsStream(SlackStream):
                 # Record filtered out during post_process()
                 continue
             yield transformed_record
+
 
 class ThreadReactionsStream(ThreadsStream):
     name = "threads-reactions"
@@ -498,19 +504,17 @@ class ThreadReactionsStream(ThreadsStream):
         *,
         write_messages: bool = True,
     ) -> Generator[dict, Any, Any]:
-        """Override Singer SDK's sync to get rid of partitions within the context
-        """
+        """Override Singer SDK's sync to get rid of partitions within the context"""
         # Initialize metrics
         record_counter = metrics.record_counter(self.name)
         timer = metrics.sync_timer(self.name)
 
-        
         record_index = 0
         context_element: dict | None
         context_list: list[dict] | None
         context_list = [context] if context is not None else self.partitions
         selected = self.selected
-        
+
         with record_counter, timer:
             for context_element in context_list or [{}]:
                 record_counter.context = context_element
@@ -605,7 +609,6 @@ class ThreadReactionsStream(ThreadsStream):
                 self.name,
             )
             raise ex
-
 
     @property
     def partitions(self) -> list[dict] | None:
