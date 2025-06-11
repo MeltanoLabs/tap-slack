@@ -9,7 +9,7 @@ schema = th.PropertiesList(
     th.Property("created", th.IntegerType),
     th.Property("creator", th.StringType),
     th.Property("context_team_id", th.StringType),
-    th.Property("updated", th.StringType),
+    th.Property("updated", th.NumberType),
     th.Property("conversation_host_id", th.StringType),
     th.Property("properties", th.AnyType),
     th.Property("is_archived", th.BooleanType),
