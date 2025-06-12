@@ -64,16 +64,24 @@ class SlackStream(RESTStream):
         ):
             msg = self.response_error_message(response)
             raise FatalAPIError(msg)
-        
+
         # Slack's API has a funny behavior in case of a bad auth token: 200 response with "invalid_auth"
         # Other errors may be acceptable, like "not_in_channel"
         try:
             parsed_res = response.json()
-            if parsed_res.get("ok", True) == False and parsed_res.get("error", "") == "invalid_auth":
+            if (
+                parsed_res.get("ok", True) == False
+                and parsed_res.get("error", "") == "invalid_auth"
+            ):
                 raise FatalAPIError(f"Slack API error: {parsed_res.get('error','')}")
-            
-            if parsed_res.get("ok", True) == False and parsed_res.get("error", "") == "missing_scope":
-                raise FatalAPIError(f"Slack API error: insufficient scope. {parsed_res}")
+
+            if (
+                parsed_res.get("ok", True) == False
+                and parsed_res.get("error", "") == "missing_scope"
+            ):
+                raise FatalAPIError(
+                    f"Slack API error: insufficient scope. {parsed_res}"
+                )
         except ValueError:
             # Do nothing, as the response might simply not be a json
             pass
@@ -121,9 +129,11 @@ class SlackStream(RESTStream):
         See for options:
         https://github.com/litl/backoff/blob/master/backoff/_wait_gen.py
 
-        And see for examples: `Code Samples <../code_samples.html#custom-backoff>`_
+        For threads API (conversations.replies): 1 request per minute
+        For other APIs: More lenient but still conservative
 
         Returns:
             The wait generator
         """
-        return backoff.expo(base=2, factor=2, max_value=15)
+        # 60s, 120s, 240s..
+        return backoff.expo(base=2, factor=60, max_value=240)
