@@ -1,25 +1,65 @@
-[tool.poetry]
+[project]
 name = "tap-slack"
-version = "0.1.6"
-description = "`tap-slack` is a Singer tap for Slack, built with the Meltano SDK for Singer Taps."
-authors = ["Stephen Bailey"]
-license = "Apache 2.0"
+version = "0.2.0"
+description = "Singer tap for Slack, built with the Meltano SDK."
+authors = [
+    { name = "Stephen Bailey" },
+    { name = "Meltano Team", email = "hello@meltano.com" },
+]
+requires-python = ">=3.9"
+license = "Apache-2.0"
+dependencies = [
+    "backports-datetime-fromisoformat>=2.0.3 ; python_full_version < '3.11'",
+    "requests~=2.32.4",
+    "singer-sdk~=0.47.2",
+]
 
-[tool.poetry.dependencies]
-python = "<3.11,>=3.8"
-requests = "^2.25.1"
-singer-sdk = ">=0.11.1"
-pendulum = "^3.0.0"
+[project.scripts]
+tap-slack = "tap_slack.tap:TapSlack.cli"
 
-[tool.poetry.dev-dependencies]
-pytest = "^6.1.2"
-black = "^21.9b0"
-tox = "^3.24.4"
+[dependency-groups]
+dev = [
+    { include-group = "testing" },
+    "types-requests>=2.32.0",
+]
+testing = [
+    "pytest>=8",
+    "singer-sdk[testing]",
+]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.poetry.scripts]
-# CLI declaration
-tap-slack = 'tap_slack.tap:TapSlack.cli'
+[tool.tox]
+min_version = "4.22"
+equires = [ "tox", "tox-uv" ]
+env_list = [
+  "format",
+  "3.13",
+]
+
+[tool.tox.env_run_base]
+description = "Run integration tests"
+runner = "uv-venv-lock-runner"
+pass_env = [ "TAP_SLACK_*" ]
+dependency_groups = [ "testing" ]
+commands = [ [ "pytest", { replace = "posargs", default = [ "tests" ], extend = true } ] ]
+
+[tool.tox.env.format]
+description = "Format code"
+runner = "uv-venv-runner"
+deps = [ "ruff" ]
+commands = [
+    [ "ruff", "check", "tap_slack/" ],
+    [ "ruff", "format", "tap_slack/" ],
+]
+
+[tool.tox.env.lint]
+description = "Lint code"
+runner = "uv-venv-runner"
+deps = [ "ruff" ]
+commands = [
+    [ "ruff", "check", "--diff", "tap_slack/" ],
+    [ "ruff", "format", "--check", "tap_slack/" ],
+]
