@@ -1,14 +1,21 @@
 """Stream type classes for tap-slack."""
+
+from __future__ import annotations
+
 import requests
-import pendulum
+import sys
 import time
 
 from datetime import datetime, timezone, timedelta
-from typing import Any, Dict, Optional, Iterable, cast
 from singer_sdk.helpers.jsonpath import extract_jsonpath
 
 from tap_slack.client import SlackStream
 from tap_slack import schemas
+
+if sys.version_info < (3, 11):
+    from backports.datetime_fromisoformat import MonkeyPatch
+
+    MonkeyPatch.patch_fromisoformat()
 
 
 class ChannelsStream(SlackStream):
@@ -43,9 +50,9 @@ class ChannelsStream(SlackStream):
         selected_channels = self.config.get("selected_channels")
         excluded_channels = self.config.get("excluded_channels", [])
         if channel_id in excluded_channels:
-                return False
+            return False
         if selected_channels and channel_id not in selected_channels:
-                return False
+            return False
         return True
 
     def _join_channel(self, channel_id: str) -> requests.Response:
@@ -108,7 +115,7 @@ class MessagesStream(SlackStream):
             params["oldest"] = start_timestamp
         return params
 
-    def post_process(self, row: dict, context: Optional[dict]) -> dict:
+    def post_process(self, row: dict, context: dict | None) -> dict | None:
         """
         Directly invoke the threads stream sync on relevant messages,
         and filter out messages that have already been synced before.
@@ -123,9 +130,7 @@ class MessagesStream(SlackStream):
             return None
         return row
 
-    def get_starting_replication_key_value(
-        self, context: Optional[dict]
-    ) -> Optional[int]:
+    def get_starting_replication_key_value(self, context: dict | None) -> int | None:
         """
         Threads can continue to have messages for weeks after the original message
         was posted, so we cannot assume that we have scraped all message replies
@@ -141,7 +146,7 @@ class MessagesStream(SlackStream):
                 return self.threads_stream_start
             return float(replication_key_value)
         elif "start_date" in self.config:
-            start_date = cast(datetime, pendulum.parse(self.config["start_date"]))
+            start_date = datetime.fromisoformat(self.config["start_date"])
             return start_date.replace(tzinfo=timezone.utc).timestamp()
         else:
             self.logger.info(

@@ -1,7 +1,5 @@
 """Slack tap class."""
 
-from typing import List
-
 from singer_sdk import Stream, Tap
 from singer_sdk import typing as th
 
@@ -76,13 +74,15 @@ class TapSlack(Tap):
         ),
     ).to_dict()
 
-    def discover_streams(self) -> List[Stream]:
+    def discover_streams(self) -> list[Stream]:
         """Return a list of discovered streams."""
 
         streams = [stream_class(tap=self) for stream_class in STREAM_TYPES]
 
         if self.config.get("include_admin_streams"):
-            streams.extend([stream_class(tap=self) for stream_class in ADMIN_STREAM_TYPES])
+            streams.extend(
+                [stream_class(tap=self) for stream_class in ADMIN_STREAM_TYPES]
+            )
 
         return streams
 

@@ -24,7 +24,7 @@ schema = th.PropertiesList(
         th.ObjectType(
             th.Property("user", th.StringType),
             th.Property("ts", th.StringType),
-        )
+        ),
     ),
     th.Property("files", th.ArrayType(th.ObjectType())),
     th.Property("upload", th.BooleanType),

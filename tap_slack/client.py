@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Dict, List, Optional, Text
+from typing import Any
 
 from requests import Response
 from singer_sdk.authenticators import BearerTokenAuthenticator
@@ -47,7 +47,7 @@ class SlackStream(RESTStream):
         )
 
     @property
-    def expectations(self) -> List[str]:
+    def expectations(self) -> list[str]:
         return [
             "stream__returns_record",
             "stream__record_schema_matches_catalog",
@@ -55,8 +55,8 @@ class SlackStream(RESTStream):
         ]
 
     def get_url_params(
-        self, context: Optional[dict], next_page_token: Optional[Any]
-    ) -> Dict[str, Any]:
+        self, context: dict | None, next_page_token: str | None
+    ) -> dict[str, Any]:
         """Return a dictionary of values to be used in URL parameterization."""
         params = {}
         if next_page_token:

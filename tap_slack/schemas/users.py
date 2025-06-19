@@ -23,7 +23,8 @@ schema = th.PropertiesList(
     th.Property(
         "profile",
         th.ObjectType(
-            th.Property("email", th.StringType),
+            th.Property("email", th.EmailType),
+            additional_properties=True,
         ),
     ),
 ).to_dict()
