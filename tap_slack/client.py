@@ -41,10 +41,7 @@ class SlackStream(RESTStream):
     @property
     def authenticator(self) -> BearerTokenAuthenticator:
         """Return a new authenticator object."""
-        return BearerTokenAuthenticator.create_for_stream(
-            self,
-            token=self.config.get("api_key"),
-        )
+        return BearerTokenAuthenticator(token=self.config.get("api_key"))
 
     @property
     def expectations(self) -> list[str]:
