@@ -20,7 +20,7 @@ tap-slack = "tap_slack.tap:TapSlack.cli"
 [dependency-groups]
 dev = [
     { include-group = "testing" },
-    "types-requests>=2.33.0.20260408",
+    "types-requests>=2.33.0.20260503",
 ]
 testing = [
     "pytest>=9.0.3",
