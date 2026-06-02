@@ -11,7 +11,7 @@ license = "Apache-2.0"
 dependencies = [
     "backports-datetime-fromisoformat>=2.0.3 ; python_full_version < '3.11'",
     "requests~=2.34.2",
-    "singer-sdk~=0.54.2",
+    "singer-sdk~=0.54.4",
 ]
 
 [project.scripts]
