@@ -23,7 +23,7 @@ dev = [
     "types-requests>=2.33.0.20260518",
 ]
 testing = [
-    "pytest>=9.0.3",
+    "pytest>=9.1.0",
     "singer-sdk[testing]",
 ]
 
