@@ -1221,7 +1221,7 @@ testing = [
 requires-dist = [
     { name = "backports-datetime-fromisoformat", marker = "python_full_version < '3.11'", specifier = ">=2.0.3" },
     { name = "requests", specifier = "~=2.34.2" },
-    { name = "singer-sdk", specifier = "~=0.54.6" },
+    { name = "singer-sdk", specifier = "~=0.54.9" },
 ]
 
 [package.metadata.requires-dev]
