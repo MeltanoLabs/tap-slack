@@ -1,12 +1,11 @@
 """Tests standard tap features using the built-in SDK tests library."""
 
-import os
 import datetime
-
-from tap_slack.tap import TapSlack
+import os
 
 from singer_sdk.testing import SuiteConfig, get_tap_test_class
 
+from tap_slack.tap import TapSlack
 
 SAMPLE_CONFIG = {
     "api_key": os.environ.get("TAP_SLACK_API_KEY"),

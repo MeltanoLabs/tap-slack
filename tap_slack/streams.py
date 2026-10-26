@@ -2,15 +2,14 @@
 
 from __future__ import annotations
 
-import requests
 import sys
 import time
+from datetime import datetime, timedelta, timezone
 
-from datetime import datetime, timezone, timedelta
 from singer_sdk.helpers.jsonpath import extract_jsonpath
 
-from tap_slack.client import SlackStream
 from tap_slack import schemas
+from tap_slack.client import SlackStream
 
 if sys.version_info < (3, 11):
     from backports.datetime_fromisoformat import MonkeyPatch
@@ -21,7 +20,7 @@ if sys.version_info < (3, 11):
 class ChannelsStream(SlackStream):
     name = "channels"
     path = "/conversations.list"
-    primary_keys = ["id"]
+    primary_keys = ("id",)
     records_jsonpath = "channels.[*]"
     schema = schemas.channels
 
@@ -51,19 +50,21 @@ class ChannelsStream(SlackStream):
         excluded_channels = self.config.get("excluded_channels", [])
         if channel_id in excluded_channels:
             return False
-        if selected_channels and channel_id not in selected_channels:
-            return False
-        return True
+        return not (selected_channels and channel_id not in selected_channels)
 
-    def _join_channel(self, channel_id: str) -> requests.Response:
+    def _join_channel(self, channel_id: str) -> None:
         url = f"{self.url_base}/conversations.join"
         params = {"channel": channel_id}
         response = self.requests_session.post(
-            url=url, params=params, headers=self.authenticator.auth_headers
+            url=url,
+            params=params,
+            headers=self.authenticator.auth_headers,
         )
         if not response.json().get("ok"):
             self.logger.warning(
-                "Error joining channel %s: %s", response.json().get("error")
+                "Error joining channel %s: %s",
+                channel_id,
+                response.json().get("error"),
             )
         self.logger.info("Successfully joined channel: %s", channel_id)
 
@@ -72,12 +73,12 @@ class ChannelMembersStream(SlackStream):
     name = "channel_members"
     parent_stream_type = ChannelsStream
     path = "/conversations.members"
-    primary_keys = ["channel_id", "member_id"]
+    primary_keys = ("channel_id", "member_id")
     records_jsonpath = "members.[*]"
     schema = schemas.channel_members
 
     ignore_parent_replication_keys = True
-    state_partitioning_keys = []
+    state_partitioning_keys = ()
 
     def parse_response(self, response):
         user_list = extract_jsonpath(self.records_jsonpath, input=response.json())
@@ -93,7 +94,7 @@ class MessagesStream(SlackStream):
     name = "messages"
     parent_stream_type = ChannelsStream
     path = "/conversations.history"
-    primary_keys = ["channel_id", "ts"]
+    primary_keys = ("channel_id", "ts")
     replication_key = "ts"
     records_jsonpath = "messages.[*]"
     schema = schemas.messages
@@ -123,7 +124,7 @@ class MessagesStream(SlackStream):
         threads_stream = self._tap.streams["threads"]
         replication_key_ts = self.get_starting_replication_key_value(context)
         if row.get("thread_ts") and threads_stream.selected:
-            threads_context = {**context, **{"thread_ts": row["ts"]}}
+            threads_context = {**context, "thread_ts": row["ts"]}
             threads_stream.sync(context=threads_context)
             time.sleep(60.0 / threads_stream.max_requests_per_minute)
         if row["ts"] and float(row["ts"]) < replication_key_ts:
@@ -164,12 +165,12 @@ class ThreadsStream(SlackStream):
 
     name = "threads"
     path = "/conversations.replies"
-    primary_keys = ["channel_id", "thread_ts", "ts"]
+    primary_keys = ("channel_id", "thread_ts", "ts")
     records_jsonpath = "messages.[*]"
     max_requests_per_minute = 50
     schema = schemas.threads
 
-    state_partitioning_keys = []
+    state_partitioning_keys = ()
 
     def post_process(self, row, context=None):
         row = super().post_process(row, context=context)
@@ -180,7 +181,7 @@ class ThreadsStream(SlackStream):
 class UsersStream(SlackStream):
     name = "users"
     path = "/users.list"
-    primary_keys = ["id"]
+    primary_keys = ("id",)
     replication_key = None
     records_jsonpath = "members.[*]"
     schema = schemas.users
