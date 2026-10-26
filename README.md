@@ -86,7 +86,7 @@ poetry install
 ### Create and Run Tests
 
 Create tests within the `tap_slack/tests` subfolder and
-  then run:
+then run:
 
 ```bash
 poetry run pytest
@@ -100,5 +100,5 @@ poetry run tap-slack --help
 
 ### SDK Dev Guide
 
-See the [dev guide](https://sdk.meltano.com/en/latest/dev_guide.html) for more instructions on how to use the SDK to 
+See the [dev guide](https://sdk.meltano.com/en/latest/dev_guide.html) for more instructions on how to use the SDK to
 develop your own taps and targets.
