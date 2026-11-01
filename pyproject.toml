@@ -22,7 +22,7 @@ dev = [
     { include-group = "testing" },
 ]
 testing = [
-    "pytest>=9.1.1",
+    "pytest>=9.2.0",
     "singer-sdk[testing]",
 ]
 
